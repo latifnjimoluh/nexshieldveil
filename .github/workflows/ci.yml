@@ -30,7 +30,9 @@ jobs:
 
       - name: Install (core + dev only, no hardware extras)
         run: |
-          python -m pip install --upgrade pip
+          # Refresh build tooling too: the runner ships an old setuptools whose
+          # deprecated package_index has known CVEs and would trip pip-audit.
+          python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
 
       - name: Ruff lint
@@ -46,7 +48,8 @@ jobs:
         run: bandit -r src -ll
 
       - name: pip-audit (dependency CVEs)
-        # Audit only this project's declared dependency tree, not the whole env.
+        # Audits the CI venv: this project's runtime + dev deps (all version-bounded)
+        # plus the refreshed build tooling. No hardware extras are installed here.
         run: pip-audit --strict --desc
 
       - name: Tests (exclude slow/hardware), with coverage
