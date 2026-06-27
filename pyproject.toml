@@ -14,29 +14,34 @@ keywords = ["privacy", "shoulder-surfing", "webcam", "overlay", "mediapipe"]
 
 # Core runtime deps. Vision/UI deps are optional extras so the pure core
 # (config/geometry/tracking/policy/masking) and CI run headless without them.
+# Upper bounds on majors keep installs reproducible against breaking releases.
 dependencies = [
-    "numpy>=1.26",
-    "pydantic>=2.6",
-    "tomli>=2.0 ; python_version < '3.11'",
+    "numpy>=1.26,<3",
+    "pydantic>=2.6,<3",
+    "tomli>=2.0,<3 ; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
+# Vision = real face detection. mss (screen capture) is intentionally NOT a
+# dependency yet: the runtime overlay applies an opaque veil and does not capture
+# the screen, so capture-based pixelate/blur are a future evolution (see ROADMAP).
 vision = [
-    "opencv-python>=4.9",
-    "mediapipe>=0.10.9",
+    "opencv-python>=4.9,<5",
+    "mediapipe>=0.10.9,<0.11",
 ]
 ui = [
-    "PySide6>=6.6",
-    "mss>=9.0",
+    "PySide6>=6.6,<7",
 ]
 dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.1",
-    "pytest-mock>=3.12",
-    "hypothesis>=6.98",
-    "ruff>=0.4",
-    "mypy>=1.9",
-    "pre-commit>=3.6",
+    "pytest>=8.0,<10",
+    "pytest-cov>=4.1,<8",
+    "pytest-mock>=3.12,<4",
+    "hypothesis>=6.98,<7",
+    "ruff>=0.4,<1",
+    "mypy>=1.9,<3",
+    "pre-commit>=3.6,<5",
+    "bandit>=1.7,<2",
+    "pip-audit>=2.7,<3",
 ]
 
 [project.scripts]

@@ -42,6 +42,13 @@ jobs:
       - name: Mypy (core modules)
         run: mypy src/privacy_guard/config src/privacy_guard/geometry src/privacy_guard/tracking src/privacy_guard/policy src/privacy_guard/masking
 
+      - name: Bandit (security lint)
+        run: bandit -r src -ll
+
+      - name: pip-audit (dependency CVEs)
+        # Audit only this project's declared dependency tree, not the whole env.
+        run: pip-audit --strict --desc
+
       - name: Tests (exclude slow/hardware), with coverage
         run: |
           pytest -m "not slow and not requires_hardware" \
