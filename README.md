@@ -1,5 +1,9 @@
 # Privacy Guard
 
+> **Naming:** the repository/product is **NexShieldVeil**; the Python
+> distribution and import package are `privacy-guard` / `privacy_guard`. They refer
+> to the same project.
+
 **Anti shoulder-surfing screen privacy guard.** Privacy Guard watches your front
 webcam and, when it detects that *someone other than you* is looking at your
 screen, automatically veils the content with an opaque overlay until they look
