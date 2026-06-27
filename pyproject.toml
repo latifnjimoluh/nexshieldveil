@@ -104,7 +104,7 @@ strict_equality = true
 
 # Hardware/adapter deps may lack stubs; don't fail typing on them.
 [[tool.mypy.overrides]]
-module = ["cv2.*", "mediapipe.*", "mss.*", "PySide6.*"]
+module = ["cv2.*", "mediapipe.*", "PySide6.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

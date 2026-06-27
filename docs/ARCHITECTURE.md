@@ -37,7 +37,7 @@ interfaces, so every decision path is exercised headless in CI.
 | `geometry` | pure | Gaze vectors, ray/plane intersection, screen targeting, primary-user pick | no |
 | `tracking` | pure | EMA / 1D Kalman smoothing | no |
 | `policy` | pure | Hysteresis state machine (anti-flicker) | no |
-| `masking` | pure | Image transforms: veil / pixelate / blur | no |
+| `masking` | pure | Image transforms: veil / pixelate / blur (only **veil** is wired to the live overlay; pixelate/blur await a capture path) | no |
 | `capture` | adapter | `FrameSource`: webcam / video file / **synthetic** | webcam optional |
 | `vision` | adapter | `FaceDetector`: MediaPipe wrapper / **scripted** | MediaPipe optional |
 | `overlay` | adapter | `Renderer`: Qt overlay / **recording** | display optional |
@@ -88,7 +88,9 @@ logged warning and a working (if limited) app rather than a crash.
 
 - **Approach B** — gaze-contingent foveal rendering.
 - **Approach C** — temporal psychovisual modulation with synchronized glasses.
-- GPU real-time blur of arbitrary on-screen content (MVP veils/pixelates a capture).
+- Capture-based masking (screen grab → pixelate/blur the captured pixels). The
+  `masking` strategies already implement these transforms; only the screen-capture
+  + live wiring remains. The current overlay applies an opaque veil.
 
 These require additional hardware and/or rendering pipelines and are deliberately
 not implemented; see `docs/ROADMAP.md`.

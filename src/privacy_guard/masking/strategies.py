@@ -151,8 +151,28 @@ class BlurMask(MaskStrategy):
         return (csum[tuple(hi)] - csum[tuple(lo)]) / window
 
 
+# Strategies the *live overlay* can apply today. The overlay only paints an
+# opaque veil; it does not capture the screen, so the pixel-transforming
+# strategies (pixelate/blur) are tested building blocks for the future
+# capture-based masking path and are NOT yet wired to the live overlay.
+RUNTIME_OVERLAY_STRATEGIES = frozenset({"veil"})
+
+
+def overlay_strategy_is_live(strategy: str) -> bool:
+    """Whether ``strategy`` is actually applied by the live overlay today.
+
+    ``pixelate``/``blur`` require capturing on-screen pixels (a future evolution),
+    so selecting them at runtime falls back to an opaque veil with a warning.
+    """
+    return strategy in RUNTIME_OVERLAY_STRATEGIES
+
+
 def make_mask_strategy(config: MaskingConfig) -> MaskStrategy:
-    """Build the configured :class:`MaskStrategy` from a :class:`MaskingConfig`."""
+    """Build the configured :class:`MaskStrategy` from a :class:`MaskingConfig`.
+
+    Note: this builds the pure image transform. Whether the *live overlay* applies
+    it is a separate question — see :func:`overlay_strategy_is_live`.
+    """
     if config.strategy == "veil":
         return VeilMask(opacity=config.opacity)
     if config.strategy == "pixelate":

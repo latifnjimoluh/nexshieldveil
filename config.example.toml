@@ -38,7 +38,10 @@ centrality_weight = 1.0
 size_weight = 1.0
 
 [masking]
+# Only "veil" is currently wired to the live overlay. "pixelate"/"blur" are
+# implemented + tested image transforms for a future capture-based path; selecting
+# them at runtime falls back to an opaque veil (with a warning).
 strategy = "veil"   # "veil" | "pixelate" | "blur"
 opacity = 0.92      # veil opacity, [0, 1]
-blur_radius = 21    # for strategy = "blur"
-pixelate_blocks = 24  # for strategy = "pixelate"
+blur_radius = 21    # for strategy = "blur" (future capture-based masking)
+pixelate_blocks = 24  # for strategy = "pixelate" (future capture-based masking)

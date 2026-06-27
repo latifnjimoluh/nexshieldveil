@@ -9,11 +9,13 @@ from hypothesis import strategies as st
 
 from privacy_guard.config import MaskingConfig
 from privacy_guard.masking import (
+    RUNTIME_OVERLAY_STRATEGIES,
     BlurMask,
     MaskStrategy,
     PixelateMask,
     VeilMask,
     make_mask_strategy,
+    overlay_strategy_is_live,
 )
 
 pytestmark = pytest.mark.unit
@@ -143,3 +145,13 @@ def test_factory_builds_configured_strategy(name: str) -> None:
     assert strategy.name == name
     out = strategy.apply(_noisy())
     assert out.shape == (64, 80, 3)
+
+
+# --------------------------------------------------------------------------- #
+# live-overlay support (honesty: only veil is wired today)
+# --------------------------------------------------------------------------- #
+def test_only_veil_is_live_on_the_overlay() -> None:
+    assert overlay_strategy_is_live("veil") is True
+    assert overlay_strategy_is_live("pixelate") is False
+    assert overlay_strategy_is_live("blur") is False
+    assert set(RUNTIME_OVERLAY_STRATEGIES) == {"veil"}

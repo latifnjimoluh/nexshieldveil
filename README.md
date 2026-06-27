@@ -2,8 +2,13 @@
 
 **Anti shoulder-surfing screen privacy guard.** Privacy Guard watches your front
 webcam and, when it detects that *someone other than you* is looking at your
-screen, automatically masks (veils / pixelates / blurs) the content until they
-look away.
+screen, automatically veils the content with an opaque overlay until they look
+away.
+
+> The live overlay applies an **opaque veil**. Pixelate/blur are implemented and
+> tested as image-transform building blocks (`privacy_guard.masking`) for a planned
+> capture-based masking path, but are **not yet wired to the live overlay**;
+> selecting them at runtime falls back to the veil with a warning.
 
 > ### Honest scope — read this first
 > On a standard display, **software cannot change the direction in which light
@@ -37,7 +42,7 @@ webcam ──▶ capture ──▶ vision ──▶ geometry ──▶ tracking 
    been looking for `trigger_ms`, and unmasks only after they've been gone for
    `release_ms` — this prevents flicker.
 6. **overlay** is a transparent, always-on-top, click-through Qt window that veils
-   the screen.
+   the screen (opaque veil; see the masking note above).
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design.
 

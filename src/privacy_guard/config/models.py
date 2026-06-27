@@ -98,7 +98,12 @@ class PrimaryUserConfig(_StrictModel):
 
 
 class MaskingConfig(_StrictModel):
-    """Masking layer settings."""
+    """Masking layer settings.
+
+    Only ``veil`` is wired to the live overlay today; ``pixelate``/``blur`` are
+    tested image-transform building blocks for a future capture-based path and fall
+    back to the veil at runtime (see ``masking.overlay_strategy_is_live``).
+    """
 
     strategy: MaskStrategyName = "veil"
     opacity: float = Field(default=0.92, ge=0.0, le=1.0)
