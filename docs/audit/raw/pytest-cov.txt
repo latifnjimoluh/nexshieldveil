@@ -1,0 +1,33 @@
+........s.................................................................................................................                                                                                  [100%]
+================================================================================================= tests coverage =================================================================================================
+________________________________________________________________________________ coverage: platform win32, python 3.13.0-final-0 _________________________________________________________________________________
+
+Name                                             Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------------------
+src\privacy_guard\__init__.py                        1      0      0      0   100%
+src\privacy_guard\app.py                            89     12     12      2    86%   83, 88, 143->148, 208-235
+src\privacy_guard\capture\__init__.py                4      0      0      0   100%
+src\privacy_guard\capture\frame_source.py           59      0      6      0   100%
+src\privacy_guard\capture\opencv_sources.py         40     17      8      1    50%   39-41, 46, 49, 53-64, 68-69, 97-98
+src\privacy_guard\config\__init__.py                 4      0      0      0   100%
+src\privacy_guard\config\loader.py                  12      0      2      0   100%
+src\privacy_guard\config\models.py                  47      0      2      0   100%
+src\privacy_guard\geometry\__init__.py               4      0      0      0   100%
+src\privacy_guard\geometry\gaze.py                  68      1     16      1    98%   136
+src\privacy_guard\geometry\types.py                 20      0      0      0   100%
+src\privacy_guard\masking\__init__.py                3      0      0      0   100%
+src\privacy_guard\masking\strategies.py             90      1     16      0    99%   163
+src\privacy_guard\policy\__init__.py                 3      0      0      0   100%
+src\privacy_guard\policy\state_machine.py           55      0     20      0   100%
+src\privacy_guard\tracking\__init__.py               3      0      0      0   100%
+src\privacy_guard\tracking\filters.py               41      1      6      0    98%   95
+src\privacy_guard\vision\__init__.py                 5      0      0      0   100%
+src\privacy_guard\vision\detector.py                23      0      0      0   100%
+src\privacy_guard\vision\mediapipe_detector.py      17      2      0      0    88%   76, 93
+src\privacy_guard\vision\observation.py             16      0      0      0   100%
+--------------------------------------------------------------------------------------------
+TOTAL                                              604     34     88      4    94%
+Coverage XML written to file coverage.xml
+============================================================================================ short test summary info =============================================================================================
+SKIPPED [1] tests\component\test_capture.py:78: OpenCV not installed
+121 passed, 1 skipped in 8.94s

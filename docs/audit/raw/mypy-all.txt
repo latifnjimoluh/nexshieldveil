@@ -1,0 +1,2 @@
+pyproject.toml: note: unused section(s): module = ['mss.*']
+Success: no issues found in 24 source files
