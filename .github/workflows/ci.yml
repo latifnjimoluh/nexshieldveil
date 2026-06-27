@@ -9,6 +9,11 @@ jobs:
   test:
     name: Test (headless, no camera/display)
     runs-on: ${{ matrix.os }}
+    # Use bash on every OS (incl. Windows) so multi-line `\` run steps parse
+    # consistently; the default Windows shell (PowerShell) treats `\` differently.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
