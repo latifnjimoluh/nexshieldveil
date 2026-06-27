@@ -67,6 +67,11 @@ class Kalman1D:
     A pragmatic 1D filter: the state is a scalar value with a constant-position
     model. ``process_var`` models how quickly the true value may drift;
     ``measurement_var`` models sensor noise. Larger ``measurement_var`` => smoother.
+
+    Provided as a utility for smoothing continuous head-pose **angles**. The default
+    pipeline smooths the *binary* observer signal with :class:`ExponentialSmoother`
+    instead (a Kalman model is ill-suited to a 0/1 input), so this class is not wired
+    into the app today; it is kept for the angle-smoothing path.
     """
 
     def __init__(

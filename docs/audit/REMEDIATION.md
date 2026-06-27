@@ -7,6 +7,20 @@ tests (jamais les affaiblir) et relancer toute la suite. Voir `docs/audit/AUDIT.
 > Aucun constat critique/élevé : il n'y a **pas** d'urgence de sécurité. Ce backlog
 > vise à rendre le produit honnête et déployable.
 
+## Statut de remédiation (branche `audit/fixes`)
+
+| ID | Statut | Commit / note |
+|---|---|---|
+| DEP-1, DEP-2, CI-1 | ✅ Fait | Bornes majeures + `bandit`/`pip-audit` en CI. |
+| PRIV-1, PRIV-2, CLAIM-2 | ✅ Fait | Garde statique AST sur tout `src/` + `PRIVACY.md` nuancé. |
+| ARCH-1, CLAIM-1, ARCH-3 | ✅ Fait | `overlay_strategy_is_live` + fallback voile + docs honnêtes ; dépendance `mss` retirée. |
+| HYG-1 | ✅ Fait | Motif `omit` de couverture corrigé. |
+| FUNC-1 | ✅ Fait | Latence effective documentée + test `alpha=1.0`. |
+| HYG-2 | ✅ Fait | Note nommage produit/paquet dans le README. |
+| ARCH-2 | ✅ Fait | `Kalman1D` documenté comme utilitaire angles (non câblé volontairement). |
+| **CONC-1** | ⏳ **Reporté** | Chantier lourd nécessitant une **validation sur machine réelle** (Qt/QThread + `app.exec()` + webcam). Non implémenté ici pour ne pas livrer du code runtime non vérifiable en CI headless ; reste le travail principal avant production. |
+| FUNC-2 | ➖ Non actionné | Classé *Info* (« aucune action requise ») ; le repli `screen.center()` n'a aucun impact réaliste. Laissé tel quel pour ne pas modifier la sémantique de détection sans validation matérielle. |
+
 ## Priorité 1 — Moyennes (à traiter avant tout usage réel)
 
 | # | ID | Action | Effort |
