@@ -17,10 +17,11 @@ env/
 *.task
 models/
 
-# OS / IDE
+# OS / IDE / agent
 .DS_Store
 .idea/
 .vscode/
+.claude/
 
 # Build
 build/

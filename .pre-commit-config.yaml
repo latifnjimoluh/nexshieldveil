@@ -9,16 +9,38 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=500"]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.10
+  # Ruff lint + format run from the project environment (local hooks) so they stay
+  # in lockstep with the ruff version pinned in [dev] and used by CI, avoiding rule
+  # drift across ruff releases. Requires `pip install -e ".[dev]"`.
+  - repo: local
     hooks:
       - id: ruff
-        args: ["--fix"]
+        name: ruff (lint)
+        entry: ruff check --fix
+        language: system
+        types_or: [python, pyi]
       - id: ruff-format
+        name: ruff (format)
+        entry: ruff format
+        language: system
+        types_or: [python, pyi]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+  # Run mypy from the project environment (a `local` hook) rather than the
+  # mirror's isolated env. This keeps the type-check in lockstep with the mypy
+  # version pinned in [dev] and used by CI, avoiding stub/version drift against
+  # fast-moving deps like numpy. Requires `pip install -e ".[dev]"`.
+  - repo: local
     hooks:
       - id: mypy
+        name: mypy (core modules)
+        entry: mypy
+        language: system
+        types: [python]
         files: ^src/privacy_guard/(config|geometry|tracking|policy|masking)/
-        additional_dependencies: ["numpy", "pydantic>=2.6"]
+        pass_filenames: false
+        args:
+          - src/privacy_guard/config
+          - src/privacy_guard/geometry
+          - src/privacy_guard/tracking
+          - src/privacy_guard/policy
+          - src/privacy_guard/masking
