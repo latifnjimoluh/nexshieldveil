@@ -1,8 +1,16 @@
 # Privacy by design
 
 Privacy Guard processes a webcam feed — the most sensitive kind of input. Its
-privacy posture is therefore a **hard design constraint**, enforced by automated
-tests (`tests/privacy/`, run on every CI build), not just a promise.
+privacy posture is therefore a **hard design constraint**, enforced on every CI
+build by two complementary layers in `tests/privacy/`:
+
+- **Behavioural tests** run a full synthetic session under monkeypatched
+  `socket`/`open`/`numpy.save` and fail on any network or disk write.
+- **A static (AST) guard** (`test_source_hygiene.py`) parses *every* file in
+  `src/` — including the real MediaPipe/OpenCV/Qt adapters that aren't importable
+  in CI — and fails if any of them imports a network/persistence module or calls a
+  disk-write/network function. This is what backs the guarantees for the real
+  hardware paths, which the behavioural tests cannot execute headlessly.
 
 ## Guarantees
 
