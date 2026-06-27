@@ -25,6 +25,8 @@ camera_above_screen_mm = 10.0
 
 [tracking]
 # EMA smoothing: higher = more reactive, lower = smoother. (0, 1].
+# This adds ~1-2 frames of warm-up to the effective masking delay (on top of
+# policy.trigger_ms). Set to 1.0 to disable smoothing (most reactive).
 smoothing_alpha = 0.4
 
 [policy]

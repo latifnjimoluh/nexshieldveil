@@ -129,6 +129,25 @@ def test_brief_glance_below_trigger_never_masks() -> None:
     assert not any(r.is_masked for r in results)
 
 
+def test_smoothing_alpha_one_removes_ema_warmup() -> None:
+    # FUNC-1: the EMA adds ~1 frame of warm-up before observer_present flips, so the
+    # effective masking latency exceeds trigger_ms. alpha=1.0 (passthrough) removes it.
+    intro = 10
+    script = [[primary_user()] for _ in range(intro)]
+    script += [[primary_user(), observer_looking()] for _ in range(20)]
+
+    smoothed, _ = run_script(script, AppConfig(tracking={"smoothing_alpha": 0.4}))
+    instant, _ = run_script(script, AppConfig(tracking={"smoothing_alpha": 1.0}))
+
+    first_smoothed = next(i for i, r in enumerate(smoothed) if r.is_masked)
+    first_instant = next(i for i, r in enumerate(instant) if r.is_masked)
+
+    # trigger_ms=400 at 20fps = 8 frames after the observer appears (frame 10).
+    assert first_instant == intro + 8
+    # The default EMA delays masking by at least one extra frame.
+    assert first_smoothed > first_instant
+
+
 def test_on_result_hook_is_called_per_frame() -> None:
     seen: list[int] = []
     cfg = AppConfig()

@@ -20,7 +20,7 @@ and hide the content.** This implies the limits below.
 |---|---|---|
 | 1 | **A camera/phone recording your screen** | A lens is not a gaze; the webcam can't tell it's being filmed. |
 | 2 | **An onlooker outside the webcam's field of view** | Detection only covers roughly the camera's ~90–180° cone. Someone behind or to the extreme side is invisible to it. |
-| 3 | **The brief window before masking** | Masking engages after `trigger_ms` of detected gaze. Content is visible during that delay (tunable, but never zero in practice). |
+| 3 | **The brief window before masking** | Masking engages after `trigger_ms` of detected gaze, **plus** a short EMA smoothing warm-up (~1-2 frames), so the effective delay is a little longer than `trigger_ms`. Content is visible during that window (tunable via `trigger_ms` and `tracking.smoothing_alpha`; set `alpha = 1.0` to drop the EMA, but it is never zero in practice). |
 | 4 | **Reflections** | Glass, glossy surfaces, a mirror, or the onlooker's own glasses can leak the screen without any face looking at it directly. |
 | 5 | **Long-range zoom / telephoto** | A distant observer with a zoom lens may be unresolved or out of frame. |
 | 6 | **Poor conditions / occlusion** | Bad lighting, masks, hats, extreme angles, or a covered camera cause missed detections (false negatives). |

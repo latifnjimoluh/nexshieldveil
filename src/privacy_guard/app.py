@@ -117,6 +117,9 @@ class PrivacyGuardPipeline:
         observer_raw, primary_index = self._detect_observer(observations)
 
         # Tracking smooths single-frame jitter; policy adds the time hysteresis.
+        # Note: this EMA adds a short warm-up before `observer_present` flips true,
+        # so the effective masking latency is `trigger_ms` PLUS ~1-2 frames (see
+        # docs/LIMITATIONS.md). Set tracking.smoothing_alpha = 1.0 to disable it.
         confidence = float(self._smoother.update(1.0 if observer_raw else 0.0))
         observer_present = confidence >= 0.5
 
