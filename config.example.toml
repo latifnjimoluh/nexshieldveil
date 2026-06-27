@@ -1,0 +1,44 @@
+# Privacy Guard — example configuration.
+# Copy to e.g. config.toml and adjust. All values shown are the defaults.
+# Every threshold is intentionally conservative; tune to your environment.
+
+[camera]
+enabled = true
+device_index = 0       # which webcam to use
+target_fps = 15
+downscale_width = 640  # frames downscaled to this width before vision (speed)
+
+[detection]
+# Local path to the MediaPipe Face Landmarker model. No auto-download ever.
+# Leave unset to run in degraded mode (no detection, never masks, no crash).
+# model_path = "models/face_landmarker.task"
+max_faces = 4
+min_detection_confidence = 0.5
+
+[geometry]
+# How forgiving the "is this gaze pointing at my screen?" test is. Generous by
+# default because webcam gaze estimation has ~1.5-3 degrees of error.
+gaze_tolerance_deg = 18.0
+screen_width_mm = 520.0
+screen_height_mm = 290.0
+camera_above_screen_mm = 10.0
+
+[tracking]
+# EMA smoothing: higher = more reactive, lower = smoother. (0, 1].
+smoothing_alpha = 0.4
+
+[policy]
+# Hysteresis (anti-flicker). release_ms must be >= trigger_ms.
+trigger_ms = 400   # observer must look this long before masking engages
+release_ms = 800   # observer must be gone this long before masking lifts
+
+[primary_user]
+# How the primary user is told apart from other faces (never identity).
+centrality_weight = 1.0
+size_weight = 1.0
+
+[masking]
+strategy = "veil"   # "veil" | "pixelate" | "blur"
+opacity = 0.92      # veil opacity, [0, 1]
+blur_radius = 21    # for strategy = "blur"
+pixelate_blocks = 24  # for strategy = "pixelate"
