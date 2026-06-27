@@ -128,7 +128,9 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["privacy_guard"]
-omit = ["*/overlay/*", "*/capture/webcam*"]
+# overlay needs a display; opencv_sources needs a real camera/OpenCV. Both are
+# adapters exercised manually, not in headless CI.
+omit = ["*/overlay/*", "*/capture/opencv_sources.py"]
 
 [tool.coverage.report]
 show_missing = true
