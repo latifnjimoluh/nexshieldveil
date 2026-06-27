@@ -73,8 +73,10 @@ convention = "google"
 # ---------------------------------------------------------------------------
 # Mypy (strict on the pure core only)
 # ---------------------------------------------------------------------------
+# Analysis grammar set to 3.12 so mypy can parse numpy 2.x's PEP 695 stubs.
+# Runtime support remains 3.11+ (we avoid 3.12-only syntax in our own code).
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
