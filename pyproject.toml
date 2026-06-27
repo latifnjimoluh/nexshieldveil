@@ -1,0 +1,133 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "privacy-guard"
+version = "0.1.0"
+description = "Anti shoulder-surfing screen privacy guard (webcam observer detection + auto masking)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Privacy Guard Dev" }]
+keywords = ["privacy", "shoulder-surfing", "webcam", "overlay", "mediapipe"]
+
+# Core runtime deps. Vision/UI deps are optional extras so the pure core
+# (config/geometry/tracking/policy/masking) and CI run headless without them.
+dependencies = [
+    "numpy>=1.26",
+    "pydantic>=2.6",
+    "tomli>=2.0 ; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+vision = [
+    "opencv-python>=4.9",
+    "mediapipe>=0.10.9",
+]
+ui = [
+    "PySide6>=6.6",
+    "mss>=9.0",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-mock>=3.12",
+    "hypothesis>=6.98",
+    "ruff>=0.4",
+    "mypy>=1.9",
+    "pre-commit>=3.6",
+]
+
+[project.scripts]
+privacy-guard = "privacy_guard.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+privacy_guard = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# Ruff (lint + format)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF", "ANN", "D"]
+ignore = [
+    "D203",   # 1 blank line before class docstring (conflicts with D211)
+    "D213",   # multi-line summary on second line (conflicts with D212)
+    "ANN401", # allow typing.Any where genuinely needed
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "D", "S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# ---------------------------------------------------------------------------
+# Mypy (strict on the pure core only)
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "privacy_guard.config.*",
+    "privacy_guard.geometry.*",
+    "privacy_guard.tracking.*",
+    "privacy_guard.policy.*",
+    "privacy_guard.masking.*",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+strict_equality = true
+
+# Hardware/adapter deps may lack stubs; don't fail typing on them.
+[[tool.mypy.overrides]]
+module = ["cv2.*", "mediapipe.*", "mss.*", "PySide6.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: pure logic unit tests",
+    "component: single module with mocked deps",
+    "integration: full pipeline with synthetic source",
+    "system: end-to-end headless run",
+    "performance: throughput/latency benchmarks (slow)",
+    "privacy: no-network / no-frame-persistence guarantees",
+    "slow: excluded from fast runs",
+    "requires_hardware: needs real camera/display (skipped in CI)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["privacy_guard"]
+omit = ["*/overlay/*", "*/capture/webcam*"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]

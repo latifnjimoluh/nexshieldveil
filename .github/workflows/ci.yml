@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test (headless, no camera/display)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install (core + dev only, no hardware extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Mypy (core modules)
+        run: mypy src/privacy_guard/config src/privacy_guard/geometry src/privacy_guard/tracking src/privacy_guard/policy src/privacy_guard/masking
+
+      - name: Tests (exclude slow/hardware), with coverage
+        run: |
+          pytest -m "not slow and not requires_hardware" \
+            --cov=privacy_guard --cov-report=term-missing --cov-report=xml
+
+      - name: Privacy guarantees (no network / no frame persistence)
+        run: pytest -m privacy -v
+
+      - name: Performance benchmarks
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: pytest -m performance -v

@@ -1,0 +1,28 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Venv
+.venv/
+venv/
+env/
+
+# Models (local only, never committed)
+*.task
+models/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Build
+build/
+dist/
+*.egg-info/
