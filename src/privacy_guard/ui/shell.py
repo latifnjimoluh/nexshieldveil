@@ -138,6 +138,24 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     controller.quit_requested.connect(app.quit)
     app.aboutToQuit.connect(controller.shutdown)
 
+    # Error actions the status surface defers to the shell (a user-initiated click;
+    # no network by us — just opens the OS camera settings or the local docs).
+    def on_error_action(action: str) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        if action == "open_system_settings":
+            target = {
+                "win32": "ms-settings:privacy-webcam",
+                "darwin": "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera",
+            }.get(sys.platform, "")
+            if target:
+                QDesktopServices.openUrl(QUrl(target))
+        elif action == "open_docs":
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(default_model_path())))
+
+    status_vm.action_requested.connect(on_error_action)
+
     # ---- first run: onboarding (camera opened only after explicit consent) ---- #
     if not settings.value("onboarding_done", False, type=bool):
 
