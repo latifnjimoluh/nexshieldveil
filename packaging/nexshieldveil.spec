@@ -37,6 +37,37 @@ hiddenimports += [
     "privacy_guard.overlay.qt_overlay",
 ]
 
+# MediaPipe's collect_all drags in its optional GenAI/LLM stack (torch ~250 MB,
+# pyarrow, HuggingFace tokenizers, etc.) that the FaceLandmarker path never uses.
+# Excluding them cuts the bundle by ~350 MB with no effect on detection.
+_EXCLUDES = [
+    # test tooling
+    "pytest",
+    "hypothesis",
+    "_pytest",
+    # MediaPipe GenAI / LLM stack (unused by vision tasks)
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "functorch",
+    "torchgen",
+    "jax",
+    "jaxlib",
+    "ml_dtypes",
+    "transformers",
+    "tokenizers",
+    "sentencepiece",
+    "safetensors",
+    "accelerate",
+    "huggingface_hub",
+    "hf_xet",
+    # heavy data libs not on our path
+    "pyarrow",
+    "pandas",
+    "cryptography",
+    "tkinter",
+]
+
 a = Analysis(
     [os.path.join(SPECPATH, "app_entry.py")],
     pathex=[os.path.join(SPECPATH, "..", "src")],
@@ -45,7 +76,7 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
-    excludes=["pytest", "hypothesis", "_pytest"],
+    excludes=_EXCLUDES,
     noarchive=False,
 )
 
