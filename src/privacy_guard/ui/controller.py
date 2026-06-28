@@ -70,6 +70,7 @@ class AppController(QObject):
             self.running_changed.emit()
         config_fields = (
             "masking_strategy",
+            "opacity",
             "sensitivity_deg",
             "trigger_ms",
             "release_ms",
@@ -107,6 +108,9 @@ class AppController(QObject):
     def _get_masking_strategy(self) -> str:
         return self._snap.masking_strategy
 
+    def _get_opacity(self) -> float:
+        return self._snap.opacity
+
     def _get_sensitivity_deg(self) -> float:
         return self._snap.sensitivity_deg
 
@@ -129,6 +133,7 @@ class AppController(QObject):
     engaging = Property(bool, _get_engaging, notify=engaging_changed)
     running = Property(bool, _get_running, notify=running_changed)
     masking_strategy = Property(str, _get_masking_strategy, notify=config_changed)
+    opacity = Property(float, _get_opacity, notify=config_changed)
     sensitivity_deg = Property(float, _get_sensitivity_deg, notify=config_changed)
     trigger_ms = Property(int, _get_trigger_ms, notify=config_changed)
     release_ms = Property(int, _get_release_ms, notify=config_changed)
@@ -160,6 +165,11 @@ class AppController(QObject):
     def set_masking_strategy(self, strategy: str) -> None:
         """Set the configured masking strategy (UI only offers the live ones)."""
         self._update(masking_strategy=strategy)
+
+    @Slot(float)
+    def set_opacity(self, opacity: float) -> None:
+        """Set the veil opacity, clamped to ``[0, 1]``."""
+        self._update(opacity=min(1.0, max(0.0, float(opacity))))
 
     @Slot(float)
     def set_sensitivity_deg(self, deg: float) -> None:

@@ -14,8 +14,14 @@ from privacy_guard.ui.state import (
     CameraError,
     ProtectionState,
     UiSnapshot,
+    color_role,
     derive_protection_state,
+    detail_key,
+    headline_key,
     is_engaging,
+    primary_action_id,
+    primary_action_label_key,
+    sensitivity_key,
 )
 
 pytestmark = pytest.mark.unit
@@ -91,6 +97,63 @@ def test_snapshot_derived_state_matches_helper() -> None:
 def test_snapshot_defaults_are_paused_until_started() -> None:
     # Before the user enables protection, the app is paused (camera not opened).
     assert UiSnapshot().protection_state is ProtectionState.PAUSED
+
+
+# --------------------------------------------------------------------------- #
+# pure presentation mappings (keys/roles consumed by view-models)
+# --------------------------------------------------------------------------- #
+def test_color_role_covers_every_state() -> None:
+    roles = {color_role(s) for s in ProtectionState}
+    assert roles == {"protected", "clear", "paused", "error"}
+
+
+def test_headline_key_shape() -> None:
+    assert headline_key(ProtectionState.PROTECTED) == "status.protected.headline"
+    assert headline_key(ProtectionState.CAMERA_ERROR) == "status.error.headline"
+
+
+def test_detail_key_uses_engaging_hint_over_clear() -> None:
+    from privacy_guard.policy import PolicyState
+
+    snap = UiSnapshot(running=True, policy_state=PolicyState.OBSERVER_DETECTED)
+    assert snap.protection_state is ProtectionState.CLEAR
+    assert detail_key(snap) == "status.clear.engaging"
+
+
+def test_detail_key_uses_error_detail_when_running_and_errored() -> None:
+    snap = UiSnapshot(running=True, error_kind=CameraError.PERMISSION_DENIED)
+    assert detail_key(snap) == "error.permission_denied.detail"
+
+
+def test_primary_action_id_per_state() -> None:
+    assert primary_action_id(UiSnapshot(running=False)) == "resume"
+    assert primary_action_id(UiSnapshot(running=True)) == "pause"
+    assert primary_action_id(UiSnapshot(running=True, error_kind=CameraError.NO_CAMERA)) == "retry"
+    assert (
+        primary_action_id(UiSnapshot(running=True, error_kind=CameraError.PERMISSION_DENIED))
+        == "open_system_settings"
+    )
+    assert (
+        primary_action_id(UiSnapshot(running=True, error_kind=CameraError.MODEL_UNAVAILABLE))
+        == "open_docs"
+    )
+
+
+def test_primary_action_label_key_matches_catalog_shape() -> None:
+    assert primary_action_label_key(UiSnapshot(running=False)) == "action.resume"
+    assert primary_action_label_key(UiSnapshot(running=True)) == "action.pause"
+    assert (
+        primary_action_label_key(UiSnapshot(running=True, error_kind=CameraError.DISCONNECTED))
+        == "error.disconnected.action"
+    )
+
+
+@pytest.mark.parametrize(
+    ("deg", "key"),
+    [(5.0, "strict"), (10.0, "strict"), (18.0, "balanced"), (25.0, "wide"), (40.0, "very_wide")],
+)
+def test_sensitivity_key_buckets(deg: float, key: str) -> None:
+    assert sensitivity_key(deg) == key
 
 
 def test_camera_error_enum_is_exhaustive() -> None:

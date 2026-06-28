@@ -84,6 +84,7 @@ class UiSnapshot:
     faces_count: int = 0
     # Mirrors of the relevant config the UI lets the user change.
     masking_strategy: str = "veil"
+    opacity: float = 0.92
     sensitivity_deg: float = 18.0
     trigger_ms: int = 400
     release_ms: int = 800
@@ -101,3 +102,68 @@ class UiSnapshot:
     def engaging(self) -> bool:
         """Whether to show the transient 'observer spotted…' hint."""
         return self.running and self.error_kind is None and is_engaging(self.policy_state)
+
+
+# --------------------------------------------------------------------------- #
+# Pure presentation mappings (language-neutral keys/roles). View-models translate.
+# --------------------------------------------------------------------------- #
+_COLOR_ROLE: dict[ProtectionState, str] = {
+    ProtectionState.PROTECTED: "protected",
+    ProtectionState.CLEAR: "clear",
+    ProtectionState.PAUSED: "paused",
+    ProtectionState.CAMERA_ERROR: "error",
+}
+
+
+def color_role(state: ProtectionState) -> str:
+    """Semantic colour token name for a state (maps to ``Theme`` state colours)."""
+    return _COLOR_ROLE[state]
+
+
+def headline_key(state: ProtectionState) -> str:
+    """i18n key for the short state headline."""
+    return f"status.{state.value.removeprefix('camera_')}.headline"
+
+
+def detail_key(snapshot: UiSnapshot) -> str:
+    """i18n key for the longer state detail line, accounting for errors/engaging."""
+    if snapshot.error_kind is not None and snapshot.running:
+        return f"error.{snapshot.error_kind.value}.detail"
+    state = snapshot.protection_state
+    if state is ProtectionState.CLEAR and snapshot.engaging:
+        return "status.clear.engaging"
+    return f"status.{state.value.removeprefix('camera_')}.detail"
+
+
+def primary_action_id(snapshot: UiSnapshot) -> str:
+    """Identifier of the main action offered for the current state.
+
+    ``resume``/``pause`` toggle watching; the error ids are handled by the shell
+    (a retry, opening system settings, or the docs).
+    """
+    if snapshot.error_kind is not None and snapshot.running:
+        return {
+            CameraError.NO_CAMERA: "retry",
+            CameraError.DISCONNECTED: "retry",
+            CameraError.PERMISSION_DENIED: "open_system_settings",
+            CameraError.MODEL_UNAVAILABLE: "open_docs",
+        }[snapshot.error_kind]
+    return "resume" if not snapshot.running else "pause"
+
+
+def primary_action_label_key(snapshot: UiSnapshot) -> str:
+    """i18n key for the primary action's label."""
+    if snapshot.error_kind is not None and snapshot.running:
+        return f"error.{snapshot.error_kind.value}.action"
+    return "action.resume" if not snapshot.running else "action.pause"
+
+
+def sensitivity_key(tolerance_deg: float) -> str:
+    """Language-neutral bucket for a gaze tolerance (mirrors ``ui.status`` thresholds)."""
+    if tolerance_deg <= 10.0:
+        return "strict"
+    if tolerance_deg <= 20.0:
+        return "balanced"
+    if tolerance_deg <= 30.0:
+        return "wide"
+    return "very_wide"
