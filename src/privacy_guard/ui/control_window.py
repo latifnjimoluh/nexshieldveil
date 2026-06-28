@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from privacy_guard.config import AppConfig, load_config
+from privacy_guard.resources import default_model_path
 from privacy_guard.ui.status import face_tag, sensitivity_descriptor, status_badge
 
 try:  # pragma: no cover - import guard
@@ -43,8 +44,6 @@ try:  # pragma: no cover - import guard
     _UI_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _UI_AVAILABLE = False
-
-DEFAULT_MODEL = "models/face_landmarker.task"
 
 _STYLESHEET = """
 QMainWindow, QWidget { background: #16181d; color: #e8e8ea; }
@@ -357,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     config = load_config(args.config) if args.config else AppConfig()
-    model_path = config.detection.model_path or DEFAULT_MODEL
+    model_path = config.detection.model_path or default_model_path()
     device = args.device if args.device is not None else config.camera.device_index
 
     app = QApplication.instance() or QApplication(sys.argv)

@@ -27,3 +27,7 @@ models/
 build/
 dist/
 *.egg-info/
+
+# Packaging artefacts (PyInstaller work dir is build/; installer output)
+packaging/Output/
+*.manifest
