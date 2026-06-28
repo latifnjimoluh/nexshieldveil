@@ -19,6 +19,20 @@ pytest.importorskip("PySide6", reason="UI tests require the [ui] extra (PySide6)
 
 from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlComponent, QQmlEngine
+
+from privacy_guard.ui.fake_controller import FakeController
+from privacy_guard.ui.qml_app import install_context, view_url
+from privacy_guard.ui.state import UiSnapshot
+from privacy_guard.ui.theme.theme_controller import ThemeController
+from privacy_guard.ui.translator import Translator
+from privacy_guard.ui.viewmodels import (
+    AboutViewModel,
+    OnboardingViewModel,
+    SettingsViewModel,
+    StatusViewModel,
+    TrayViewModel,
+)
 
 
 @pytest.fixture(scope="session")
@@ -26,6 +40,55 @@ def qapp() -> QGuiApplication:
     """A single offscreen QGuiApplication for the whole session (needed for QML)."""
     app = QGuiApplication.instance() or QGuiApplication([])
     return app  # session-scoped; Qt cleans up at interpreter exit
+
+
+class QmlHarness:
+    """Builds a QML engine wired to fakes, and loads view files headlessly."""
+
+    def __init__(self, snapshot: UiSnapshot | None = None, *, dark: bool = True) -> None:
+        self.controller = FakeController(snapshot)
+        self.translator = Translator("fr")
+        self.theme = ThemeController(dark=dark)
+        self.status = StatusViewModel(self.controller, self.translator)
+        self.settings = SettingsViewModel(self.controller, self.translator)
+        self.onboarding = OnboardingViewModel(self.controller, self.translator)
+        self.about = AboutViewModel(self.translator)
+        self.tray = TrayViewModel(self.controller, self.translator)
+        self.engine = QQmlEngine()
+        self.engine.addImportPath(str(view_url("").toLocalFile()))
+        install_context(
+            self.engine.rootContext(),
+            theme=self.theme,
+            translator=self.translator,
+            status=self.status,
+            settings=self.settings,
+            onboarding=self.onboarding,
+            about=self.about,
+            tray=self.tray,
+        )
+        self._kept: list[object] = []
+
+    def load(self, view_name: str):
+        """Instantiate a view file; fail loudly on any QML error."""
+        component = QQmlComponent(self.engine, view_url(view_name))
+        obj = component.create()
+        assert obj is not None, f"{view_name} failed to load:\n" + "\n".join(
+            e.toString() for e in component.errors()
+        )
+        # Keep the C++ object alive for the test (QML would otherwise JS-GC it).
+        QQmlEngine.setObjectOwnership(obj, QQmlEngine.ObjectOwnership.CppOwnership)
+        self._kept.extend((component, obj))
+        return obj
+
+
+@pytest.fixture
+def qml(qapp):
+    """Factory: ``qml()`` -> a fresh QmlHarness (optionally with a starting snapshot)."""
+
+    def _make(snapshot: UiSnapshot | None = None, *, dark: bool = True) -> QmlHarness:
+        return QmlHarness(snapshot, dark=dark)
+
+    return _make
 
 
 @pytest.fixture

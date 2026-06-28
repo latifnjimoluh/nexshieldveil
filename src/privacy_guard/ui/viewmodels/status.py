@@ -60,6 +60,9 @@ class StatusViewModel(QObject):
     def _get_is_paused(self) -> bool:
         return self._c.snapshot.protection_state is ProtectionState.PAUSED
 
+    def _get_engaging(self) -> bool:
+        return self._c.snapshot.engaging
+
     # ---- camera transparency -------------------------------------------- #
     def _get_camera_active(self) -> bool:
         return self._c.snapshot.camera_active
@@ -89,6 +92,7 @@ class StatusViewModel(QObject):
     detail = Property(str, _get_detail, notify=changed)
     is_error = Property(bool, _get_is_error, notify=changed)
     is_paused = Property(bool, _get_is_paused, notify=changed)
+    engaging = Property(bool, _get_engaging, notify=changed)
     camera_active = Property(bool, _get_camera_active, notify=changed)
     camera_label = Property(str, _get_camera_label, notify=changed)
     show_faces = Property(bool, _get_show_faces, notify=changed)
