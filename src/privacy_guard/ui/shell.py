@@ -21,12 +21,79 @@ from privacy_guard.resources import default_model_path
 logger = logging.getLogger("privacy_guard.ui")
 
 
+_VIEWS = (
+    "GlassPanel.qml",
+    "PrimaryButton.qml",
+    "StatusPill.qml",
+    "CameraBadge.qml",
+    "Veil.qml",
+    "StatusView.qml",
+    "AboutView.qml",
+    "OnboardingView.qml",
+    "SettingsView.qml",
+)
+
+
+def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build smoke test
+    """Load every QML view offscreen and exit 0. Validates a (frozen) build's wiring."""
+    import os
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtGui import QGuiApplication
+    from PySide6.QtQml import QQmlComponent, QQmlEngine
+
+    from privacy_guard.ui.fake_controller import FakeController
+    from privacy_guard.ui.qml_app import install_context, view_url
+    from privacy_guard.ui.theme.theme_controller import ThemeController
+    from privacy_guard.ui.translator import Translator
+    from privacy_guard.ui.viewmodels import (
+        AboutViewModel,
+        OnboardingViewModel,
+        SettingsViewModel,
+        StatusViewModel,
+        TrayViewModel,
+    )
+
+    QGuiApplication.instance() or QGuiApplication([])
+    controller = FakeController()
+    translator = Translator("fr")
+    theme = ThemeController()
+    engine = QQmlEngine()
+    install_context(
+        engine.rootContext(),
+        theme=theme,
+        translator=translator,
+        status=StatusViewModel(controller, translator),
+        settings=SettingsViewModel(controller, translator),
+        onboarding=OnboardingViewModel(controller, translator),
+        about=AboutViewModel(translator),
+        tray=TrayViewModel(controller, translator),
+    )
+    for view in _VIEWS:
+        component = QQmlComponent(engine, view_url(view))
+        obj = component.create()
+        if obj is None:
+            errors = "; ".join(e.toString() for e in component.errors())
+            print(f"SELFCHECK FAIL: {view}: {errors}", file=sys.stderr)
+            return 1
+    print(f"SELFCHECK OK: {len(_VIEWS)} views loaded.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a display
     """Launch the QML desktop UI wired to the real core."""
     parser = argparse.ArgumentParser(description="NexShieldVeil — interface QML (MVVM).")
     parser.add_argument("-c", "--config", help="Optional TOML config file.")
     parser.add_argument("--light", action="store_true", help="Start in the light theme.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Self-test: load every QML view and exit (used to validate the build).",
+    )
     args = parser.parse_args(argv)
+
+    if args.check:
+        return _selfcheck()
 
     try:
         from PySide6.QtCore import QLocale, QSettings

@@ -8,11 +8,20 @@ Missing fonts simply fall back to system faces — the app never blocks on this.
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 
 logger = logging.getLogger("privacy_guard.ui")
 
-_FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
+
+def _fonts_dir() -> Path:
+    """The bundled fonts directory, for source *and* frozen builds."""
+    if getattr(sys, "frozen", False):  # pragma: no cover - frozen bundle only
+        return Path(sys._MEIPASS) / "privacy_guard" / "ui" / "assets" / "fonts"  # type: ignore[attr-defined]
+    return Path(__file__).parent / "assets" / "fonts"
+
+
+_FONTS_DIR = _fonts_dir()
 
 
 def load_bundled_fonts() -> list[str]:

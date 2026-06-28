@@ -10,6 +10,7 @@ Output: dist/NexShieldVeil/NexShieldVeil.exe   (onedir; wrapped by the Inno inst
 Set NSV_CONSOLE=1 before building to keep a console window (handy for debugging).
 """
 
+import glob
 import os
 
 from PyInstaller.utils.hooks import collect_all
@@ -30,8 +31,41 @@ for pkg in ("mediapipe", "cv2"):
 _model = os.path.join(SPECPATH, "..", "models", "face_landmarker.task")
 datas += [(_model, "models")]
 
+# Bundle the QML views + i18n catalogs (+ any vendored OFL fonts) at the exact paths
+# the frozen resolvers expect (privacy_guard/ui/{views,i18n,assets/fonts}).
+_ui = os.path.join(SPECPATH, "..", "src", "privacy_guard", "ui")
+for src in glob.glob(os.path.join(_ui, "views", "*.qml")):
+    datas.append((src, "privacy_guard/ui/views"))
+for src in glob.glob(os.path.join(_ui, "i18n", "*.json")):
+    datas.append((src, "privacy_guard/ui/i18n"))
+for pattern in ("*.ttf", "*.otf"):
+    for src in glob.glob(os.path.join(_ui, "assets", "fonts", pattern)):
+        datas.append((src, "privacy_guard/ui/assets/fonts"))
+
 hiddenimports += [
-    "privacy_guard.ui.control_window",
+    # New QML (MVVM) UI — much of it is imported lazily inside shell.main().
+    "privacy_guard.ui.shell",
+    "privacy_guard.ui.core_controller",
+    "privacy_guard.ui.controller",
+    "privacy_guard.ui.fake_controller",
+    "privacy_guard.ui.state",
+    "privacy_guard.ui.translator",
+    "privacy_guard.ui.qml_app",
+    "privacy_guard.ui.fonts",
+    "privacy_guard.ui.theme.theme_controller",
+    "privacy_guard.ui.viewmodels",
+    "privacy_guard.ui.viewmodels.status",
+    "privacy_guard.ui.viewmodels.tray",
+    "privacy_guard.ui.viewmodels.settings",
+    "privacy_guard.ui.viewmodels.onboarding",
+    "privacy_guard.ui.viewmodels.about",
+    "privacy_guard.ui.updater_ui",
+    "privacy_guard.ui.control_window",  # kept for `nexshieldveil-classic`
+    # Qt Quick runtime (the views use QtQuick + Controls.Basic).
+    "PySide6.QtQml",
+    "PySide6.QtQuick",
+    "PySide6.QtQuickControls2",
+    # Core adapters.
     "privacy_guard.vision.mediapipe_detector",
     "privacy_guard.capture.opencv_sources",
     "privacy_guard.overlay.qt_overlay",

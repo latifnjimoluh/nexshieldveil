@@ -6,12 +6,21 @@ context property names (``Theme``, ``Tr``, ``statusVM``, …) to QML.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QUrl
 from PySide6.QtQml import QQmlContext
 
-VIEWS_DIR = Path(__file__).parent / "views"
+
+def _ui_dir() -> Path:
+    """The ``privacy_guard/ui`` directory, resolved for source *and* frozen builds."""
+    if getattr(sys, "frozen", False):  # pragma: no cover - frozen bundle only
+        return Path(sys._MEIPASS) / "privacy_guard" / "ui"  # type: ignore[attr-defined]
+    return Path(__file__).parent
+
+
+VIEWS_DIR = _ui_dir() / "views"
 
 
 def view_url(name: str) -> QUrl:

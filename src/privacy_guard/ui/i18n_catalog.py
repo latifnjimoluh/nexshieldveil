@@ -7,13 +7,22 @@ copy-honesty tests can scan the catalogs without a display.
 from __future__ import annotations
 
 import json
+import sys
 from functools import cache
 from pathlib import Path
 
 AVAILABLE_LANGUAGES: tuple[str, ...] = ("fr", "en")
 DEFAULT_LANGUAGE = "fr"
 
-_I18N_DIR = Path(__file__).parent / "i18n"
+
+def _i18n_dir() -> Path:
+    """The ``privacy_guard/ui/i18n`` directory, for source *and* frozen builds."""
+    if getattr(sys, "frozen", False):  # pragma: no cover - frozen bundle only
+        return Path(sys._MEIPASS) / "privacy_guard" / "ui" / "i18n"  # type: ignore[attr-defined]
+    return Path(__file__).parent / "i18n"
+
+
+_I18N_DIR = _i18n_dir()
 
 
 def normalize_language(lang: str | None) -> str:
