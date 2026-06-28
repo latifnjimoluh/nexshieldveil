@@ -18,7 +18,9 @@ tests (jamais les affaiblir) et relancer toute la suite. Voir `docs/audit/AUDIT.
 | FUNC-1 | ✅ Fait | Latence effective documentée + test `alpha=1.0`. |
 | HYG-2 | ✅ Fait | Note nommage produit/paquet dans le README. |
 | ARCH-2 | ✅ Fait | `Kalman1D` documenté comme utilitaire angles (non câblé volontairement). |
-| **CONC-1** | ⏳ **Reporté** | Chantier lourd nécessitant une **validation sur machine réelle** (Qt/QThread + `app.exec()` + webcam). Non implémenté ici pour ne pas livrer du code runtime non vérifiable en CI headless ; reste le travail principal avant production. |
+| **CONC-1** | ✅ Fait | Application desktop PySide6 (`privacy_guard.ui.control_window`) avec boucle `QTimer` + `app.exec()`, **validée sur machine réelle** (webcam + voile). Choix : boucle mono-thread pilotée par `QTimer` (inférence sur le thread UI, suffisant aux cadences webcam) ; le passage à un `QThread` worker reste une optimisation future si l'inférence devient lourde. |
+| **GAZE-1** | ✅ Fait | Bug réel découvert au test machine : `solvePnP` renvoyait un pitch décalé de ~180° (modèle `+y` haut vs image `+y` bas), donc un visage de face était classé « ne regarde pas ». Corrigé par `_wrap_pitch_deg` + test unitaire pur. |
+| **NET-1** | ⚠️ Constaté | MediaPipe tente sa propre télémétrie réseau (« clearcut », visible dans les logs). Hors de notre code (garde AST sur `src/` toujours verte). Documenté dans `README`/`PRIVACY.md` ; mitigation = blocage réseau du processus au pare-feu. Pas de désactivation publique fiable connue côté MediaPipe. |
 | FUNC-2 | ➖ Non actionné | Classé *Info* (« aucune action requise ») ; le repli `screen.center()` n'a aucun impact réaliste. Laissé tel quel pour ne pas modifier la sémantique de détection sans validation matérielle. |
 
 ## Priorité 1 — Moyennes (à traiter avant tout usage réel)
