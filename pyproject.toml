@@ -46,6 +46,7 @@ dev = [
 
 [project.scripts]
 privacy-guard = "privacy_guard.app:main"
+nexshieldveil = "privacy_guard.ui.control_window:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -71,6 +72,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "D", "S101"]
+# scripts/ holds manual dev/test harnesses (hardware GUIs), not shipped code.
+# E501 is relaxed because they print fixed-width, aligned diagnostic readouts.
+"scripts/**" = ["ANN", "D", "T201", "E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -128,9 +132,15 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["privacy_guard"]
-# overlay needs a display; opencv_sources needs a real camera/OpenCV. Both are
-# adapters exercised manually, not in headless CI.
-omit = ["*/overlay/*", "*/capture/opencv_sources.py"]
+# overlay needs a display; opencv_sources needs a real camera/OpenCV; the Qt control
+# window needs a display too. All are adapters exercised manually, not in headless CI.
+# (ui/status.py is pure and stays covered.)
+omit = [
+    "*/overlay/*",
+    "*/capture/opencv_sources.py",
+    "*/ui/control_window.py",
+    "*/ui/__main__.py",
+]
 
 [tool.coverage.report]
 show_missing = true
