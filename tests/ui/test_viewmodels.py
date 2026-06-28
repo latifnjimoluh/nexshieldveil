@@ -163,6 +163,17 @@ def test_tray_commands_forward_to_controller(env) -> None:
     assert ctrl.quit_calls == 1
 
 
+def test_tray_menu_labels(env) -> None:
+    ctrl, tr = env
+    vm = TrayViewModel(ctrl, tr)
+    assert vm.property("settings_label") == "Réglages…"
+    assert vm.property("about_label") == "À propos & limites"
+    assert vm.property("quit_label") == "Quitter"
+    assert vm.property("camera_label") == "Caméra inactive"
+    ctrl.emit_camera_active(True)
+    assert vm.property("camera_label") == "Caméra active"
+
+
 # --------------------------------------------------------------------------- #
 # SettingsViewModel
 # --------------------------------------------------------------------------- #
@@ -247,6 +258,16 @@ def test_onboarding_steps_and_clamping(env) -> None:
     assert vm.property("is_last") is True
     vm.next()  # clamped
     assert vm.property("index") == 2
+
+
+def test_onboarding_back_from_later_step(env) -> None:
+    ctrl, tr = env
+    vm = OnboardingViewModel(ctrl, tr)
+    vm.next()
+    vm.next()
+    assert vm.property("index") == 2
+    vm.back()
+    assert vm.property("index") == 1
 
 
 def test_onboarding_titles_translate_per_step(env) -> None:

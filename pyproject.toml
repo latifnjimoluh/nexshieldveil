@@ -50,13 +50,21 @@ dev = [
 
 [project.scripts]
 privacy-guard = "privacy_guard.app:main"
-nexshieldveil = "privacy_guard.ui.control_window:main"
+nexshieldveil = "privacy_guard.ui.shell:main"
+nexshieldveil-classic = "privacy_guard.ui.control_window:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-privacy_guard = ["py.typed"]
+# Ship the QML views and i18n catalogs (and any bundled OFL fonts) with the wheel.
+privacy_guard = [
+    "py.typed",
+    "ui/views/*.qml",
+    "ui/i18n/*.json",
+    "ui/assets/fonts/*.ttf",
+    "ui/assets/fonts/*.otf",
+]
 
 # ---------------------------------------------------------------------------
 # Ruff (lint + format)
@@ -143,7 +151,11 @@ omit = [
     "*/overlay/*",
     "*/capture/opencv_sources.py",
     "*/ui/control_window.py",
+    "*/ui/updater_ui.py",
     "*/ui/__main__.py",
+    # The QML shell is display/hardware glue (tray + windows); its logic lives in the
+    # unit-tested view-models. CoreController's pure result-mapping stays covered.
+    "*/ui/shell.py",
 ]
 
 [tool.coverage.report]

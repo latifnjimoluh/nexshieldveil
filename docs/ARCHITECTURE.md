@@ -69,6 +69,43 @@ independent thresholds:
 - `MASKED → CLEAR` after `release_ms` of sustained absence (`release_ms >=
   trigger_ms`), giving hysteresis that prevents on/off flicker.
 
+## The frontend (MVVM) and its contract with the core
+
+The desktop UI is a **thin presentation layer** in `privacy_guard/ui/`, kept strictly
+separate from the core and fully testable headless (`QT_QPA_PLATFORM=offscreen`). It
+never duplicates decision logic — it observes the core and sends commands.
+
+```
+        core (pipeline)                 UI contract                presentation
+ ┌───────────────────────┐      ┌────────────────────────┐   ┌────────────────────┐
+ │ PrivacyGuardPipeline   │ on_  │ AppController (QObject) │   │ view-models (QObj) │
+ │ FrameResult ──────────────────▶ snapshot: UiSnapshot   │──▶│ status/settings/…  │──▶ QML views
+ │ (worker QThread)       │ result│ commands: enable/pause │   │ (translate + bind) │   (Qt Quick)
+ └───────────────────────┘      └───────────┬────────────┘   └────────────────────┘
+                                  FakeController (tests)            ThemeController + Translator
+```
+
+- **`AppController`** (`ui/controller.py`) — the only surface the view-models/QML
+  touch. Exposes a `UiSnapshot` as notifiable Qt properties and accepts commands as
+  slots. `ProtectionState` (`PROTECTED`/`CLEAR`/`PAUSED`/`CAMERA_ERROR`) is the small
+  UI vocabulary derived from `PolicyState` + camera availability + errors
+  (`ui/state.py`, pure & unit-tested).
+- **`FakeController`** (`ui/fake_controller.py`) — hand-drivable stub of the same
+  contract; the entire presentation layer is tested against it with no hardware.
+- **`CoreController`** (`ui/core_controller.py`) — the live implementation. Capture +
+  inference + decision run in a **worker `QThread`** (so the Qt UI thread never
+  blocks); per-frame `FrameResult`s are mapped onto the snapshot and the overlay is
+  painted on the UI thread.
+- **View-models** (`ui/viewmodels/`) — `QObject`s that translate the snapshot via the
+  `Translator` (FR/EN) into ready-to-bind properties. No widgets, no hardware.
+- **Views** (`ui/views/*.qml`) + **theme** (`ui/theme/`, tokens are the single source
+  of truth, AA contrast tested) + **i18n** (`ui/i18n/`).
+
+Privacy is preserved at the UI boundary: the UI adds no network/telemetry, writes no
+image, never displays a stored frame, shows only a face *count* (never identity), and
+surfaces the limitations honestly (enforced by the i18n copy-honesty test). The static
+AST privacy guard scans these files too.
+
 ## Coordinate frame (geometry)
 
 Right-handed, camera at the origin: `+x` right, `+y` up, `+z` toward the viewer.

@@ -104,32 +104,34 @@ donc ne masque jamais, mais ne plante pas.
 
 ### 1. Application desktop (recommandé)
 
-Une vraie fenêtre PySide6 : aperçu caméra stylé, état en direct, contrôles.
+Interface **QML / Qt Quick** en architecture **MVVM** : l'app vit dans la **barre
+d'état système** (tray) et ouvre à la demande des fenêtres soignées (réglages, à
+propos, état). L'esthétique « verre dépoli » fait écho au voile qu'elle pose.
 
 ```bash
-nexshieldveil                       # ou :  python -m privacy_guard.ui
+nexshieldveil                       # interface QML (barre d'état système)
 nexshieldveil --config config.example.toml
-nexshieldveil --device 1            # autre webcam
+nexshieldveil --light               # thème clair (défaut : sombre)
 ```
 
-Dans la fenêtre :
-- **Démarrer / Arrêter** — active/coupe la caméra (le modèle se charge au démarrage).
-- **Badge d'état** — `CLAIR` (vert) → `OBSERVATEUR…` (ambre) → `MASQUÉ` (rouge).
-- **Aperçu** — chaque visage est entouré et étiqueté :
-  - `principal` (gris) = toi, exempté ;
-  - `REGARDE` (rouge) = un autre visage qui vise l'écran → déclenche le voile ;
-  - `ne regarde pas` (vert) = présent mais ne regarde pas.
-- **Mode test solo** — désactive l'exemption du principal : *ton* regard déclenche
-  alors le voile (pratique pour tester seul, sans 2ᵉ personne).
-- **Sensibilité du déclenchement** — la tolérance d'angle du regard (5°→40°) :
-  vers la **droite** = plus méfiant (se masque même si on regarde de biais) ; vers la
-  **gauche** = plus strict (se masque seulement si on fixe l'écran de face). Défaut
-  **18°** (équilibré), volontairement large car la pose de tête par webcam a déjà
-  quelques degrés d'erreur.
-- **Paramètres** — affiche la version et gère les **mises à jour** : vérification
-  automatique au démarrage (désactivable), bouton « Vérifier les mises à jour », et
-  téléchargement + installation en un clic quand une nouvelle version existe. Une
-  **icône dans la zone de notification** (tray) signale les mises à jour par une bulle.
+- **Icône de la barre d'état** — état lisible d'un coup d'œil : `Dégagé` / `Protégé`
+  / `En pause` / `Erreur caméra`. Menu : bascule pause/reprise, **Ouvrir** (fenêtre
+  d'état), **Réglages**, **À propos & limites**, **Quitter**.
+- **Première exécution** — un onboarding honnête : ce que fait l'app **et ses
+  limites**, puis une **demande de consentement caméra explicite** (la caméra ne
+  s'ouvre qu'après ton accord), puis 2-3 réglages.
+- **Indicateur « caméra active »** — visible dès que la caméra lit des images
+  (exigence de transparence).
+- **Réglages** — sensibilité du regard, délais de déclenchement/levée (hystérésis),
+  style de masquage (seul le **voile opaque** est actif aujourd'hui ; flou /
+  pixelisation sont marqués « bientôt »), opacité, caméra, démarrage à la session,
+  **langue (FR/EN)** et **thème (clair/sombre)**.
+- **Accessibilité** — contraste AA, focus clavier visible, tout opérable au clavier,
+  `prefers-reduced-motion` respecté.
+
+> L'ancienne fenêtre Qt Widgets (aperçu caméra + mises à jour intégrées) reste
+> disponible le temps de la bascule : `nexshieldveil-classic` (ou
+> `python -m privacy_guard.ui`).
 
 > **Mises à jour & vie privée.** La vérification des mises à jour est la **seule**
 > fonction qui contacte le réseau (GitHub) ; elle n'envoie **aucune donnée** et est
@@ -179,10 +181,12 @@ Tous les seuils sont configurables (et conservateurs par défaut). Principaux :
 ## 🧪 Développement
 
 ```bash
+pip install -e ".[dev,ui]"                 # dev tools + PySide6 (pour les tests d'UI)
 ruff check . && ruff format --check .      # lint + format
 mypy src/privacy_guard/config src/privacy_guard/geometry \
      src/privacy_guard/tracking src/privacy_guard/policy src/privacy_guard/masking
-pytest -m "not slow and not requires_hardware"   # suite rapide
+pytest -m "not slow and not requires_hardware"   # suite rapide (cœur + UI)
+pytest tests/ui                                   # uniquement l'UI (view-models + QML)
 pytest -m privacy                                 # garanties de confidentialité
 pytest -m performance                             # benchmarks
 pytest --cov=privacy_guard --cov-report=term-missing
@@ -190,10 +194,20 @@ bandit -r src -ll                                 # lint sécurité
 pre-commit install                                # active les hooks
 ```
 
-Toute la suite tourne **headless** (sans caméra ni écran) grâce à l'injection de
-`SyntheticFrameSource` + `ScriptedFaceDetector` : la CI est déterministe. Les
-adaptateurs matériels (webcam, MediaPipe, fenêtres Qt) sont derrière des interfaces
-injectables et des gardes d'import, donc dégradables.
+Toute la suite tourne **headless** (sans caméra ni écran). Le cœur s'injecte via
+`SyntheticFrameSource` + `ScriptedFaceDetector` ; **l'UI** se teste via un
+`FakeController` (stub de l'interface d'état) et le **plateforme Qt offscreen** :
+
+```bash
+# Les tests d'UI fixent QT_QPA_PLATFORM=offscreen automatiquement, mais en cas de
+# besoin (ex. lancer un seul fichier QML) :
+QT_QPA_PLATFORM=offscreen pytest tests/ui/test_views.py     # macOS/Linux
+$env:QT_QPA_PLATFORM="offscreen"; pytest tests/ui/test_views.py   # Windows PowerShell
+```
+
+Les adaptateurs matériels (webcam, MediaPipe, fenêtres Qt) sont derrière des
+interfaces injectables et des gardes d'import, donc dégradables. Sans l'extra `ui`
+(PySide6), `tests/ui` est **ignoré** plutôt qu'en échec.
 
 ---
 
@@ -202,11 +216,22 @@ injectables et des gardes d'import, donc dégradables.
 ```
 src/privacy_guard/
   capture/  vision/  geometry/  tracking/  policy/  masking/  overlay/  config/
-  ui/        # application desktop PySide6 (fenêtre de contrôle + helpers purs)
+  ui/                  # frontend MVVM (PySide6)
+    controller.py      #   AppController : contrat d'état observable cœur↔UI
+    fake_controller.py #   stub pilotable (tests headless)
+    core_controller.py #   implémentation réelle (worker thread → snapshot)
+    state.py           #   enums + mappings purs (sans Qt)
+    translator.py      #   i18n FR/EN commutable à chaud
+    viewmodels/        #   QObjects testables (status, settings, onboarding, about, tray)
+    views/             #   .qml (verre dépoli + transition « voile qui se pose »)
+    theme/             #   tokens de design + ThemeController (sombre/clair, motion)
+    i18n/              #   fr.json, en.json
+    shell.py           #   lancement réel : tray + fenêtres QML
+    control_window.py  #   ancienne UI Qt Widgets (fallback « classic »)
   app.py     # pipeline + CLI headless
 scripts/     # run_live.py, diagnose_gaze.py (tests manuels matériels)
-tests/       # unit/ component/ integration/ system/ performance/ privacy/
-docs/        # ROADMAP  ARCHITECTURE  PRIVACY  LIMITATIONS  audit/
+tests/       # unit/ component/ integration/ system/ performance/ privacy/ ui/
+docs/        # ROADMAP ARCHITECTURE PRIVACY LIMITATIONS UI_PLAN DESIGN_TOKENS audit/
 ```
 
 ## Licence
