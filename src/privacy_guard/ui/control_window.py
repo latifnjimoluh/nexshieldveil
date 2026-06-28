@@ -28,15 +28,17 @@ from privacy_guard.ui.status import face_tag, sensitivity_descriptor, status_bad
 try:  # pragma: no cover - import guard
     import cv2
     from PySide6.QtCore import Qt, QTimer
-    from PySide6.QtGui import QBrush, QColor, QFont, QImage, QPainter, QPen, QPixmap
+    from PySide6.QtGui import QAction, QBrush, QColor, QFont, QImage, QPainter, QPen, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
         QCheckBox,
         QHBoxLayout,
         QLabel,
         QMainWindow,
+        QMenu,
         QPushButton,
         QSlider,
+        QSystemTrayIcon,
         QVBoxLayout,
         QWidget,
     )
@@ -74,6 +76,12 @@ if _UI_AVAILABLE:  # pragma: no cover - requires a display
     from privacy_guard.overlay import QtOverlayRenderer
     from privacy_guard.policy import DecisionStateMachine, PolicyState
     from privacy_guard.tracking import ExponentialSmoother
+    from privacy_guard.ui.updater_ui import (
+        SettingsDialog,
+        UpdateCheckThread,
+        auto_check_enabled,
+        shield_icon,
+    )
     from privacy_guard.vision import MediaPipeFaceDetector
 
     class ControlWindow(QMainWindow):
@@ -102,10 +110,18 @@ if _UI_AVAILABLE:  # pragma: no cover - requires a display
             self._timer = QTimer(self)
             self._timer.timeout.connect(self._on_tick)
 
+            self._update_info = None
+            self._check_thread: UpdateCheckThread | None = None
+            self._tray: QSystemTrayIcon | None = None
+
             self.setWindowTitle("NexShieldVeil")
-            self.resize(760, 680)
+            self.setWindowIcon(shield_icon())
+            self.resize(760, 700)
             self.setStyleSheet(_STYLESHEET)
             self._build_ui()
+            self._setup_tray()
+            if auto_check_enabled():
+                self._start_update_check(silent=True)
 
         # ---- UI construction -------------------------------------------------
         def _build_ui(self) -> None:
@@ -120,9 +136,13 @@ if _UI_AVAILABLE:  # pragma: no cover - requires a display
             self._badge.setStyleSheet("background:#3a3d44;")
             self._meta = QLabel("Visages : 0")
             self._meta.setObjectName("meta")
+            self._settings_btn = QPushButton("Paramètres")
+            self._settings_btn.setObjectName("stop")
+            self._settings_btn.clicked.connect(self._open_settings)
             top.addWidget(self._badge)
             top.addStretch(1)
             top.addWidget(self._meta)
+            top.addWidget(self._settings_btn)
             root.addLayout(top)
 
             self._preview = QLabel("Appuie sur « Démarrer » pour activer la caméra.")
@@ -335,9 +355,68 @@ if _UI_AVAILABLE:  # pragma: no cover - requires a display
             )
             self._preview.setPixmap(pix)
 
+        # ---- tray + updates --------------------------------------------------
+        def _setup_tray(self) -> None:
+            if not QSystemTrayIcon.isSystemTrayAvailable():
+                return
+            self._tray = QSystemTrayIcon(shield_icon(), self)
+            self._tray.setToolTip("NexShieldVeil")
+            menu = QMenu()
+            act_open = QAction("Ouvrir", self)
+            act_open.triggered.connect(self._show_window)
+            act_settings = QAction("Paramètres…", self)
+            act_settings.triggered.connect(self._open_settings)
+            act_quit = QAction("Quitter", self)
+            act_quit.triggered.connect(QApplication.quit)
+            menu.addAction(act_open)
+            menu.addAction(act_settings)
+            menu.addSeparator()
+            menu.addAction(act_quit)
+            self._tray.setContextMenu(menu)
+            self._tray.activated.connect(self._on_tray_activated)
+            self._tray.show()
+
+        def _on_tray_activated(self, reason: object) -> None:
+            if reason == QSystemTrayIcon.ActivationReason.Trigger:
+                self._show_window()
+
+        def _show_window(self) -> None:
+            self.showNormal()
+            self.raise_()
+            self.activateWindow()
+
+        def _open_settings(self) -> None:
+            dialog = SettingsDialog(self)
+            if self._update_info is not None:
+                dialog.present_update(self._update_info)
+            dialog.exec()
+
+        def _start_update_check(self, *, silent: bool) -> None:
+            self._check_thread = UpdateCheckThread(self)
+            self._check_thread.found.connect(
+                lambda info: self._on_update_found(info, silent=silent)
+            )
+            self._check_thread.start()
+
+        def _on_update_found(self, info: object, *, silent: bool) -> None:
+            self._update_info = info
+            if info is None:
+                return
+            version = getattr(info, "version", "?")
+            self._settings_btn.setText("Paramètres ●")
+            if self._tray is not None:
+                self._tray.showMessage(
+                    "NexShieldVeil",
+                    f"Mise à jour {version} disponible. Ouvre les Paramètres pour l'installer.",
+                    shield_icon(),
+                    10000,
+                )
+
         def closeEvent(self, event: object) -> None:
             """Release camera/detector/overlay when the window closes (Qt override)."""
             self._stop()
+            if self._tray is not None:
+                self._tray.hide()
             super().closeEvent(event)  # type: ignore[arg-type]
 
 

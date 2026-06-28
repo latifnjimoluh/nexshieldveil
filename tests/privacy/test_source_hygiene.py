@@ -19,6 +19,26 @@ pytestmark = pytest.mark.privacy
 
 SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "privacy_guard"
 
+# The single, documented network exception: the self-updater. It only fetches release
+# metadata + the installer, never any camera/biometric data (proven by the isolation
+# test below). Every other source file stays fully network/persistence-free.
+QUARANTINE = {Path("update") / "checker.py"}
+
+# The updater must never be able to reach a camera frame or biometric pipeline.
+CAMERA_THIRD_PARTY_ROOTS = {"cv2", "mediapipe", "PIL"}
+CAMERA_INTERNAL_PREFIXES = (
+    "privacy_guard.capture",
+    "privacy_guard.vision",
+    "privacy_guard.app",
+)
+
+
+def _is_camera_import(name: str) -> bool:
+    if _module_root(name) in CAMERA_THIRD_PARTY_ROOTS:
+        return True
+    return any(name == p or name.startswith(p + ".") for p in CAMERA_INTERNAL_PREFIXES)
+
+
 # Importing any of these modules would enable outbound network or persistence.
 FORBIDDEN_IMPORTS = {
     "socket",
@@ -119,12 +139,42 @@ class _HygieneVisitor(ast.NodeVisitor):
 def test_no_source_file_imports_network_or_persistence() -> None:
     offenders: dict[str, list[str]] = {}
     for path in _source_files():
+        rel = path.relative_to(SRC_ROOT)
+        if rel in QUARANTINE:
+            continue  # the updater is the single allow-listed network module
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         visitor = _HygieneVisitor()
         visitor.visit(tree)
         if visitor.violations:
-            offenders[str(path.relative_to(SRC_ROOT))] = visitor.violations
+            offenders[str(rel)] = visitor.violations
     assert not offenders, f"privacy-forbidden constructs found in src/: {offenders}"
+
+
+def test_quarantined_updater_exists() -> None:
+    # The allow-list must point at a real file (catches renames that would silently
+    # drop the exemption or leave a dead entry).
+    for rel in QUARANTINE:
+        assert (SRC_ROOT / rel).is_file(), f"quarantined file missing: {rel}"
+
+
+def test_updater_is_isolated_from_camera_and_biometrics() -> None:
+    # The network-capable updater must not be able to import any camera/vision/frame
+    # code. This mechanically guarantees it can never exfiltrate biometric data.
+    update_dir = SRC_ROOT / "update"
+    offenders: dict[str, list[str]] = {}
+    for path in sorted(update_dir.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        bad: list[str] = []
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            bad += [n for n in names if _is_camera_import(n)]
+        if bad:
+            offenders[path.name] = bad
+    assert not offenders, f"updater must not import camera/biometric modules: {offenders}"
 
 
 def test_guard_detects_a_planted_violation() -> None:

@@ -126,6 +126,15 @@ Dans la fenêtre :
   **gauche** = plus strict (se masque seulement si on fixe l'écran de face). Défaut
   **18°** (équilibré), volontairement large car la pose de tête par webcam a déjà
   quelques degrés d'erreur.
+- **Paramètres** — affiche la version et gère les **mises à jour** : vérification
+  automatique au démarrage (désactivable), bouton « Vérifier les mises à jour », et
+  téléchargement + installation en un clic quand une nouvelle version existe. Une
+  **icône dans la zone de notification** (tray) signale les mises à jour par une bulle.
+
+> **Mises à jour & vie privée.** La vérification des mises à jour est la **seule**
+> fonction qui contacte le réseau (GitHub) ; elle n'envoie **aucune donnée** et est
+> totalement isolée de la caméra (voir [`docs/PRIVACY.md`](docs/PRIVACY.md)). La
+> détection/masquage fonctionne, elle, **100% hors ligne**.
 
 ### 2. Ligne de commande sans interface (headless)
 
