@@ -56,6 +56,21 @@ _MODEL_POINTS = np.array(
 _LANDMARK_IDS = (1, 152, 33, 263, 61, 291)
 
 
+def _wrap_pitch_deg(pitch_deg: float) -> float:
+    """Normalize a solvePnP pitch angle into ``[-90, 90)``.
+
+    Our 3D model points use ``+y`` up, while OpenCV's image frame is ``+y`` down, so
+    ``solvePnP`` returns a pitch offset by ~180 degrees (it reads ~+-170 when the user
+    faces the camera). Wrapping it back makes "facing forward" ~0, matching
+    :func:`privacy_guard.geometry.gaze.gaze_vector` (pitch ~0 => gaze ~ ``-z``, into
+    the screen). The residual up/down sign is approximate, which is acceptable given
+    the deliberately generous angular tolerance in the geometry layer.
+
+    This is pure (no OpenCV) so it is unit-tested headlessly.
+    """
+    return (pitch_deg + 90.0) % 180.0 - 90.0
+
+
 class MediaPipeFaceDetector(FaceDetector):
     """Face/landmark detector backed by MediaPipe's Face Landmarker task."""
 
@@ -146,7 +161,10 @@ class MediaPipeFaceDetector(FaceDetector):
         rmat, _ = cv2.Rodrigues(rvec)
         # Yaw about vertical axis, pitch about horizontal axis (degrees).
         yaw = math.degrees(math.atan2(-rmat[2, 0], math.hypot(rmat[2, 1], rmat[2, 2])))
-        pitch = math.degrees(math.atan2(rmat[2, 1], rmat[2, 2]))
+        # The +y-up model vs +y-down image frame leaves pitch offset by ~180 deg; wrap
+        # it so "facing the camera" is ~0 (see _wrap_pitch_deg). Without this, gaze
+        # points away from the screen and nothing is ever detected as "looking".
+        pitch = _wrap_pitch_deg(math.degrees(math.atan2(rmat[2, 1], rmat[2, 2])))
         # cv2 camera frame: +x right, +y down, +z forward. Convert to our frame
         # (+y up, +z toward viewer): flip y and z signs of the translation.
         t = tvec.reshape(3)
