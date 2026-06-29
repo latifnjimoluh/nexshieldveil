@@ -24,6 +24,8 @@ ALL_VIEWS = [
     "AboutView.qml",
     "OnboardingView.qml",
     "SettingsView.qml",
+    "CameraView.qml",
+    "MainView.qml",
 ]
 
 
@@ -82,6 +84,47 @@ def test_status_view_camera_badge_tracks_activity(qml) -> None:
     h = qml(UiSnapshot(running=True, camera_active=True))
     badge = _find(h.load("StatusView.qml"), "cameraBadge")
     assert badge.property("active") is True
+
+
+# --------------------------------------------------------------------------- #
+# main window: options are on the interface, camera preview is opt-in
+# --------------------------------------------------------------------------- #
+def test_main_view_exposes_all_options(qml) -> None:
+    h = qml()
+    root = h.load("MainView.qml")
+    for name in ("primaryAction", "previewToggle", "settingsButton", "aboutButton", "quitButton"):
+        assert _find(root, name) is not None
+
+
+def test_main_view_camera_hidden_by_default(qml) -> None:
+    h = qml()
+    cam = _find(h.load("MainView.qml"), "cameraView")
+    assert cam.property("visible") is False  # preview is opt-in
+
+
+def test_main_view_preview_toggle_reveals_camera(qml) -> None:
+    h = qml()
+    root = h.load("MainView.qml")
+    cam = _find(root, "cameraView")
+    assert cam.property("visible") is False
+    _find(root, "previewToggle").clicked.emit()
+    assert h.controller.property("preview_enabled") is True
+    assert cam.property("visible") is True  # now shown
+
+
+def test_main_view_buttons_open_settings_and_about(qml) -> None:
+    h = qml()
+    root = h.load("MainView.qml")
+    _find(root, "settingsButton").clicked.emit()
+    _find(root, "aboutButton").clicked.emit()
+    assert h.controller.settings_opened == 1
+    assert h.controller.about_opened == 1
+
+
+def test_camera_view_shows_off_message_when_unavailable(qml) -> None:
+    h = qml()
+    img = _find(h.load("CameraView.qml"), "cameraImage")
+    assert img.property("visible") is False  # nothing to show until a frame arrives
 
 
 # --------------------------------------------------------------------------- #

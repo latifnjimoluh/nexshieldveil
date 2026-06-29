@@ -21,14 +21,19 @@ class FakeController(AppController):
         """Start from an optional snapshot and begin recording intents."""
         super().__init__(snapshot, parent)
         self.settings_opened = 0
+        self.about_opened = 0
         self.onboarding_done = 0
         self.quit_calls = 0
         self.settings_requested.connect(self._count_settings)
+        self.about_requested.connect(self._count_about)
         self.onboarding_finished.connect(self._count_onboarding)
         self.quit_requested.connect(self._count_quit)
 
     def _count_settings(self) -> None:
         self.settings_opened += 1
+
+    def _count_about(self) -> None:
+        self.about_opened += 1
 
     def _count_onboarding(self) -> None:
         self.onboarding_done += 1

@@ -31,6 +31,8 @@ _VIEWS = (
     "AboutView.qml",
     "OnboardingView.qml",
     "SettingsView.qml",
+    "CameraView.qml",
+    "MainView.qml",
 )
 
 
@@ -43,11 +45,13 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
     from PySide6.QtQml import QQmlComponent, QQmlEngine
 
     from privacy_guard.ui.fake_controller import FakeController
+    from privacy_guard.ui.preview import CameraImageProvider
     from privacy_guard.ui.qml_app import install_context, view_url
     from privacy_guard.ui.theme.theme_controller import ThemeController
     from privacy_guard.ui.translator import Translator
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
+        CameraViewModel,
         OnboardingViewModel,
         SettingsViewModel,
         StatusViewModel,
@@ -58,7 +62,9 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
     controller = FakeController()
     translator = Translator("fr")
     theme = ThemeController()
+    provider = CameraImageProvider()
     engine = QQmlEngine()
+    engine.addImageProvider(CameraImageProvider.PROVIDER_ID, provider)
     install_context(
         engine.rootContext(),
         theme=theme,
@@ -68,6 +74,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
         onboarding=OnboardingViewModel(controller, translator),
         about=AboutViewModel(translator),
         tray=TrayViewModel(controller, translator),
+        camera=CameraViewModel(controller, translator, provider),
     )
     for view in _VIEWS:
         component = QQmlComponent(engine, view_url(view))
@@ -109,12 +116,14 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     from privacy_guard.ui.core_controller import CoreController
     from privacy_guard.ui.fonts import load_bundled_fonts
     from privacy_guard.ui.i18n_catalog import normalize_language
+    from privacy_guard.ui.preview import CameraImageProvider
     from privacy_guard.ui.qml_app import install_context, view_url
     from privacy_guard.ui.theme.theme_controller import ThemeController
     from privacy_guard.ui.translator import Translator
     from privacy_guard.ui.updater_ui import shield_icon
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
+        CameraViewModel,
         OnboardingViewModel,
         SettingsViewModel,
         StatusViewModel,
@@ -136,19 +145,26 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     theme = ThemeController(dark=not args.light)
 
     controller = CoreController(config, model_path)
+    provider = CameraImageProvider()
     status_vm = StatusViewModel(controller, translator)
     settings_vm = SettingsViewModel(controller, translator)
     onboarding_vm = OnboardingViewModel(controller, translator)
     about_vm = AboutViewModel(translator)
     tray_vm = TrayViewModel(controller, translator)
+    camera_vm = CameraViewModel(controller, translator, provider)
 
     translator.language_changed.connect(lambda: settings.setValue("language", translator.language))
+    # Live preview frames (emitted only while the preview is on) -> the camera VM.
+    controller.frame_ready.connect(camera_vm.push_frame)
 
     windows: dict[str, QQuickView] = {}
 
     def show_window(name: str, view: str, width: int, height: int) -> None:
         if name not in windows:
             v = QQuickView()
+            # Only the main window renders the live preview; one engine owns the provider.
+            if view == "MainView.qml":
+                v.engine().addImageProvider(CameraImageProvider.PROVIDER_ID, provider)
             install_context(
                 v.engine().rootContext(),
                 theme=theme,
@@ -158,6 +174,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
                 onboarding=onboarding_vm,
                 about=about_vm,
                 tray=tray_vm,
+                camera=camera_vm,
             )
             v.setColor(theme.base)
             v.setResizeMode(QQuickView.ResizeMode.SizeRootObjectToView)
@@ -177,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     act_toggle.triggered.connect(controller.toggle)
     menu.addSeparator()
     act_status = menu.addAction(translator.tr_key("action.open"))
-    act_status.triggered.connect(lambda: show_window("status", "StatusView.qml", 440, 300))
+    act_status.triggered.connect(lambda: show_window("main", "MainView.qml", 480, 460))
     act_settings = menu.addAction(tray_vm.property("settings_label"))
     act_settings.triggered.connect(lambda: show_window("settings", "SettingsView.qml", 600, 660))
     act_about = menu.addAction(tray_vm.property("about_label"))
@@ -202,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     controller.settings_requested.connect(
         lambda: show_window("settings", "SettingsView.qml", 600, 660)
     )
+    controller.about_requested.connect(lambda: show_window("about", "AboutView.qml", 500, 540))
     controller.quit_requested.connect(app.quit)
     app.aboutToQuit.connect(controller.shutdown)
 
@@ -223,6 +241,9 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
 
     status_vm.action_requested.connect(on_error_action)
 
+    def open_main() -> None:
+        show_window("main", "MainView.qml", 480, 460)
+
     # ---- first run: onboarding (camera opened only after explicit consent) ---- #
     if not settings.value("onboarding_done", False, type=bool):
 
@@ -230,11 +251,14 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
             settings.setValue("onboarding_done", True)
             if "onboarding" in windows:
                 windows["onboarding"].close()
+            open_main()  # then surface the main interface (preview stays off)
 
         controller.onboarding_finished.connect(finish_onboarding)
         show_window("onboarding", "OnboardingView.qml", 560, 540)
     else:
+        # Background protection starts; the camera *preview* stays off until requested.
         controller.enable()
+        open_main()
 
     return int(app.exec())
 

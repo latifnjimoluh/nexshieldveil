@@ -68,6 +68,18 @@
   "language.fr": "Français",
   "language.en": "English",
 
+  "preview.title": "Aperçu caméra",
+  "preview.show": "Afficher la caméra",
+  "preview.hide": "Masquer la caméra",
+  "preview.hint": "Affiche ce que voit la caméra et ce qu'elle détecte. Rien n'est enregistré ni envoyé.",
+  "preview.off": "Aperçu désactivé — la caméra n'est pas affichée.",
+  "preview.legend.primary": "Toi (principal)",
+  "preview.legend.observer": "Regarde l'écran",
+  "preview.legend.idle": "Ne regarde pas",
+
+  "main.title": "NexShieldVeil",
+  "main.subtitle": "Bouclier anti regard indiscret",
+
   "masking.veil": "Voile opaque",
   "masking.blur": "Flou",
   "masking.pixelate": "Pixelisation",

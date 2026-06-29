@@ -22,12 +22,14 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from privacy_guard.ui.fake_controller import FakeController
+from privacy_guard.ui.preview import CameraImageProvider
 from privacy_guard.ui.qml_app import install_context, view_url
 from privacy_guard.ui.state import UiSnapshot
 from privacy_guard.ui.theme.theme_controller import ThemeController
 from privacy_guard.ui.translator import Translator
 from privacy_guard.ui.viewmodels import (
     AboutViewModel,
+    CameraViewModel,
     OnboardingViewModel,
     SettingsViewModel,
     StatusViewModel,
@@ -54,8 +56,11 @@ class QmlHarness:
         self.onboarding = OnboardingViewModel(self.controller, self.translator)
         self.about = AboutViewModel(self.translator)
         self.tray = TrayViewModel(self.controller, self.translator)
+        self.provider = CameraImageProvider()
+        self.camera = CameraViewModel(self.controller, self.translator, self.provider)
         self.engine = QQmlEngine()
         self.engine.addImportPath(str(view_url("").toLocalFile()))
+        self.engine.addImageProvider(CameraImageProvider.PROVIDER_ID, self.provider)
         install_context(
             self.engine.rootContext(),
             theme=self.theme,
@@ -65,6 +70,7 @@ class QmlHarness:
             onboarding=self.onboarding,
             about=self.about,
             tray=self.tray,
+            camera=self.camera,
         )
         self._kept: list[object] = []
 

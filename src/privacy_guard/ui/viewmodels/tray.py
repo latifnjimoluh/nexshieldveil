@@ -75,6 +75,11 @@ class TrayViewModel(QObject):
         self._c.open_settings()
 
     @Slot()
+    def open_about(self) -> None:
+        """Request the about/limits window."""
+        self._c.open_about()
+
+    @Slot()
     def quit(self) -> None:
         """Request application quit."""
         self._c.quit()

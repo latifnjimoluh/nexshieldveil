@@ -9,6 +9,7 @@ hardware, so they are exercised headlessly with the ``FakeController``.
 from __future__ import annotations
 
 from privacy_guard.ui.viewmodels.about import AboutViewModel
+from privacy_guard.ui.viewmodels.camera import CameraViewModel
 from privacy_guard.ui.viewmodels.onboarding import OnboardingViewModel
 from privacy_guard.ui.viewmodels.settings import SettingsViewModel
 from privacy_guard.ui.viewmodels.status import StatusViewModel
@@ -16,6 +17,7 @@ from privacy_guard.ui.viewmodels.tray import TrayViewModel
 
 __all__ = [
     "AboutViewModel",
+    "CameraViewModel",
     "OnboardingViewModel",
     "SettingsViewModel",
     "StatusViewModel",

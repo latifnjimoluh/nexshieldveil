@@ -50,6 +50,24 @@ class FrameResult:
     is_masked: bool
 
 
+@dataclass(frozen=True)
+class StepDetail:
+    """Transient per-frame detail for an *optional* diagnostic/preview consumer.
+
+    Carries the raw frame image plus the decision context the core already computed
+    (so a preview can draw boxes/tags without re-implementing any logic). It is passed
+    to the ``on_step_detail`` callback and **never retained** by the pipeline — the
+    image lives only for the duration of the call, preserving the no-frame-accumulation
+    guarantee.
+    """
+
+    image: object  # the BGR frame (numpy array); typed loosely to avoid a hard dep here
+    observations: list[FaceObservation]
+    looking: list[bool]  # per-face: does this face's gaze hit the screen?
+    primary_index: int | None
+    result: FrameResult
+
+
 class PrivacyGuardPipeline:
     """Wires the pure decision modules to injectable hardware adapters."""
 
@@ -60,13 +78,19 @@ class PrivacyGuardPipeline:
         detector: FaceDetector,
         renderer: Renderer,
         on_result: Callable[[FrameResult], None] | None = None,
+        on_step_detail: Callable[[StepDetail], None] | None = None,
     ) -> None:
-        """Build the pipeline from config and injected adapters."""
+        """Build the pipeline from config and injected adapters.
+
+        ``on_step_detail`` is an optional diagnostic hook (e.g. a live preview). When
+        ``None`` (the default) there is zero extra work and nothing extra is retained.
+        """
         self.config = config
         self.source = source
         self.detector = detector
         self.renderer = renderer
         self._on_result = on_result
+        self._on_step_detail = on_step_detail
 
         self._screen = ScreenModel(
             width_mm=config.geometry.screen_width_mm,
@@ -90,22 +114,25 @@ class PrivacyGuardPipeline:
         gaze = gaze_vector(obs.yaw_deg, obs.pitch_deg)
         return gaze_points_at_screen(obs.position_mm, gaze, self._screen, self._tolerance)
 
-    def _detect_observer(self, observations: list[FaceObservation]) -> tuple[bool, int | None]:
-        """Return ``(observer_present, primary_index)`` for one frame's observations."""
+    def _detect_observer(
+        self, observations: list[FaceObservation]
+    ) -> tuple[bool, int | None, list[bool]]:
+        """Return ``(observer_present, primary_index, looking)`` for one frame.
+
+        ``looking[i]`` is whether face ``i``'s gaze hits the screen (independent of who
+        is the primary user); the preview uses it to tag faces.
+        """
         if not observations:
-            return False, None
+            return False, None, []
+        looking = [self._observer_is_looking(obs) for obs in observations]
         candidates = [o.to_candidate() for o in observations]
         primary_index = select_primary_user(
             candidates,
             centrality_weight=self.config.primary_user.centrality_weight,
             size_weight=self.config.primary_user.size_weight,
         )
-        observer_present = any(
-            self._observer_is_looking(obs)
-            for i, obs in enumerate(observations)
-            if i != primary_index
-        )
-        return observer_present, primary_index
+        observer_present = any(hit for i, hit in enumerate(looking) if i != primary_index)
+        return observer_present, primary_index, looking
 
     def step(self) -> FrameResult | None:
         """Process the next frame; return its :class:`FrameResult` or ``None`` if exhausted."""
@@ -114,7 +141,7 @@ class PrivacyGuardPipeline:
             return None
 
         observations = self.detector.detect(frame)
-        observer_raw, primary_index = self._detect_observer(observations)
+        observer_raw, primary_index, looking = self._detect_observer(observations)
 
         # Tracking smooths single-frame jitter; policy adds the time hysteresis.
         # Note: this EMA adds a short warm-up before `observer_present` flips true,
@@ -139,6 +166,17 @@ class PrivacyGuardPipeline:
         self.last_result = result
         if self._on_result is not None:
             self._on_result(result)
+        if self._on_step_detail is not None:
+            # Transient: the image is borrowed for this call only, never retained.
+            self._on_step_detail(
+                StepDetail(
+                    image=frame.image,
+                    observations=observations,
+                    looking=looking,
+                    primary_index=primary_index,
+                    result=result,
+                )
+            )
         return result
 
     def run(self, max_frames: int | None = None) -> list[FrameResult]:

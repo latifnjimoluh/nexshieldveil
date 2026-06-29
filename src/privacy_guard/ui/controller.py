@@ -35,8 +35,10 @@ class AppController(QObject):
     engaging_changed = Signal()
     running_changed = Signal()
     config_changed = Signal()
+    preview_changed = Signal()
     # Intent signals the app shell connects (open the settings window, quit, …).
     settings_requested = Signal()
+    about_requested = Signal()
     onboarding_finished = Signal()
     quit_requested = Signal()
 
@@ -68,6 +70,8 @@ class AppController(QObject):
             self.engaging_changed.emit()
         if old.running != new.running:
             self.running_changed.emit()
+        if old.preview_enabled != new.preview_enabled:
+            self.preview_changed.emit()
         config_fields = (
             "masking_strategy",
             "opacity",
@@ -126,6 +130,9 @@ class AppController(QObject):
     def _get_start_at_login(self) -> bool:
         return self._snap.start_at_login
 
+    def _get_preview_enabled(self) -> bool:
+        return self._snap.preview_enabled
+
     protection_state = Property(str, _get_protection_state, notify=state_changed)
     camera_active = Property(bool, _get_camera_active, notify=camera_active_changed)
     error_kind = Property(str, _get_error_kind, notify=error_changed)
@@ -139,6 +146,7 @@ class AppController(QObject):
     release_ms = Property(int, _get_release_ms, notify=config_changed)
     camera_index = Property(int, _get_camera_index, notify=config_changed)
     start_at_login = Property(bool, _get_start_at_login, notify=config_changed)
+    preview_enabled = Property(bool, _get_preview_enabled, notify=preview_changed)
 
     # ------------------------------------------------------------------ #
     # commands (slots). Base updates the snapshot; subclasses also act on the core.
@@ -150,8 +158,8 @@ class AppController(QObject):
 
     @Slot()
     def pause(self) -> None:
-        """Pause watching and release the camera (no camera => no error to show)."""
-        self._update(running=False, camera_active=False, error_kind=None)
+        """Pause watching and release the camera (no camera => no preview, no error)."""
+        self._update(running=False, camera_active=False, error_kind=None, preview_enabled=False)
 
     @Slot()
     def toggle(self) -> None:
@@ -198,10 +206,29 @@ class AppController(QObject):
         """Toggle 'start at login' (the shell persists/applies it)."""
         self._update(start_at_login=bool(value))
 
+    @Slot(bool)
+    def set_preview_enabled(self, enabled: bool) -> None:
+        """Show/hide the live camera preview. Turning it on also resumes watching."""
+        enabled = bool(enabled)
+        if enabled and not self._snap.running:
+            self._update(running=True, preview_enabled=True)
+        else:
+            self._update(preview_enabled=enabled)
+
+    @Slot()
+    def toggle_preview(self) -> None:
+        """Toggle the live camera preview."""
+        self.set_preview_enabled(not self._snap.preview_enabled)
+
     @Slot()
     def open_settings(self) -> None:
         """Ask the shell to open the settings window."""
         self.settings_requested.emit()
+
+    @Slot()
+    def open_about(self) -> None:
+        """Ask the shell to open the about/limits window."""
+        self.about_requested.emit()
 
     @Slot()
     def finish_onboarding(self) -> None:

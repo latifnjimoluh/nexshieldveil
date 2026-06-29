@@ -109,6 +109,33 @@ def test_intents_are_emitted(ctrl: FakeController) -> None:
 # --------------------------------------------------------------------------- #
 # pushed core signals map to the right UI state
 # --------------------------------------------------------------------------- #
+def test_preview_enable_also_starts_watching(ctrl: FakeController) -> None:
+    assert ctrl.property("preview_enabled") is False
+    ctrl.set_preview_enabled(True)
+    assert ctrl.property("preview_enabled") is True
+    assert ctrl.property("running") is True  # turning on the camera view resumes watching
+
+
+def test_preview_toggle(ctrl: FakeController) -> None:
+    ctrl.toggle_preview()
+    assert ctrl.property("preview_enabled") is True
+    ctrl.toggle_preview()
+    assert ctrl.property("preview_enabled") is False
+
+
+def test_pause_disables_preview(ctrl: FakeController) -> None:
+    ctrl.set_preview_enabled(True)
+    ctrl.pause()
+    assert ctrl.property("preview_enabled") is False
+    assert ctrl.property("running") is False
+
+
+def test_preview_change_emits_signal(ctrl: FakeController, record) -> None:
+    events = record(ctrl.preview_changed)
+    ctrl.set_preview_enabled(True)
+    assert len(events) == 1
+
+
 def test_emit_masked_is_protected(ctrl: FakeController) -> None:
     ctrl.emit_masked(True)
     assert ctrl.property("protection_state") == ProtectionState.PROTECTED.value

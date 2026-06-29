@@ -42,6 +42,7 @@ def install_context(context: QQmlContext, **objects: QObject | None) -> None:
         "onboarding": "onboardingVM",
         "about": "aboutVM",
         "tray": "trayVM",
+        "camera": "cameraVM",
     }
     for key, qml_name in mapping.items():
         obj = objects.get(key)

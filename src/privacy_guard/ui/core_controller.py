@@ -41,6 +41,7 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
     """Runs the capture->decision loop off the UI thread, emitting results."""
 
     produced = Signal(object)  # FrameResult
+    frame_produced = Signal(object)  # QImage (annotated preview frame)
     failed = Signal(str)  # CameraError value
 
     def __init__(self, config: AppConfig, model_path: str, parent: QObject | None = None) -> None:
@@ -48,9 +49,24 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
         self._config = config
         self._model_path = model_path
         self._stop = False
+        self._preview = False
 
     def stop(self) -> None:
         self._stop = True
+
+    def set_preview(self, enabled: bool) -> None:
+        self._preview = bool(enabled)
+
+    def _emit_detail(self, detail: object) -> None:
+        # Only paint a frame when the preview is on (CPU + privacy: opt-in display).
+        if not self._preview:
+            return
+        from privacy_guard.ui.preview import annotate_frame
+
+        qimg = annotate_frame(
+            detail.image, detail.observations, detail.looking, detail.primary_index
+        )
+        self.frame_produced.emit(qimg)
 
     def run(self) -> None:
         from pathlib import Path
@@ -79,8 +95,14 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
             return
 
         # The worker decides; the UI thread paints the overlay from the emitted result.
+        # The optional detail hook builds the preview frame only when preview is on.
         pipeline = PrivacyGuardPipeline(
-            self._config, source, detector, RecordingRenderer(), on_result=self.produced.emit
+            self._config,
+            source,
+            detector,
+            RecordingRenderer(),
+            on_result=self.produced.emit,
+            on_step_detail=self._emit_detail,
         )
         try:
             while not self._stop:
@@ -94,6 +116,10 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
 
 class CoreController(AppController):
     """Live controller: starts/stops the worker and maps results to the snapshot."""
+
+    # Annotated preview frame (QImage), forwarded to the camera view-model on the UI
+    # thread. Emitted only while the preview is enabled.
+    frame_ready = Signal(object)
 
     def __init__(self, config: AppConfig, model_path: str, parent: QObject | None = None) -> None:
         """Initialise paused, mirroring ``config``; no hardware touched yet."""
@@ -132,6 +158,14 @@ class CoreController(AppController):
         super().pause()
         self._stop_worker()
 
+    def set_preview_enabled(self, enabled: bool) -> None:  # pragma: no cover - hardware
+        """Toggle the live preview, starting the worker if needed."""
+        super().set_preview_enabled(enabled)  # updates snapshot (may set running=True)
+        if self._snap.running and self._worker is None:
+            self._start_worker()
+        if self._worker is not None:
+            self._worker.set_preview(self._snap.preview_enabled)
+
     def _start_worker(self) -> None:  # pragma: no cover - hardware
         from privacy_guard.overlay import QtOverlayRenderer, qt_available
 
@@ -139,7 +173,9 @@ class CoreController(AppController):
         if qt_available() and self._overlay is None:
             self._overlay = QtOverlayRenderer(opacity=self._config.masking.opacity)
         self._worker = _PipelineWorker(self._config, self._model_path, self)
+        self._worker.set_preview(self._snap.preview_enabled)
         self._worker.produced.connect(self.apply_frame_result)
+        self._worker.frame_produced.connect(self.frame_ready)
         self._worker.failed.connect(self.report_worker_error)
         self._worker.start()
 

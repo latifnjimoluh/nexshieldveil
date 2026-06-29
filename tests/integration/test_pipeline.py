@@ -148,6 +148,37 @@ def test_smoothing_alpha_one_removes_ema_warmup() -> None:
     assert first_smoothed > first_instant
 
 
+def test_on_step_detail_hook_exposes_frame_and_looking() -> None:
+    from privacy_guard.app import StepDetail
+
+    details: list[StepDetail] = []
+    cfg = AppConfig()
+    source = SyntheticFrameSource(n_frames=3, fps=FPS)
+    detector = ScriptedFaceDetector([[primary_user(), observer_looking()] for _ in range(3)])
+    pipeline = PrivacyGuardPipeline(
+        cfg, source, detector, RecordingRenderer(), on_step_detail=details.append
+    )
+    pipeline.run()
+
+    assert len(details) == 3
+    d = details[0]
+    # The central/large face is the primary; the off-centre observer is looking.
+    assert d.primary_index == 0
+    assert d.looking[1] is True
+    assert len(d.observations) == 2
+    assert d.image is not None  # the raw frame is handed over for drawing
+    assert d.result is details[0].result  # the FrameResult is attached
+
+
+def test_on_step_detail_absent_by_default() -> None:
+    # No hook -> the optional path is simply never taken (zero overhead).
+    cfg = AppConfig()
+    source = SyntheticFrameSource(n_frames=2, fps=FPS)
+    detector = ScriptedFaceDetector([[primary_user()] for _ in range(2)])
+    pipeline = PrivacyGuardPipeline(cfg, source, detector, RecordingRenderer())
+    assert pipeline.run()  # runs fine with on_step_detail=None
+
+
 def test_on_result_hook_is_called_per_frame() -> None:
     seen: list[int] = []
     cfg = AppConfig()

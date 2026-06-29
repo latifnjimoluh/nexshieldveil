@@ -90,6 +90,9 @@ class UiSnapshot:
     release_ms: int = 800
     camera_index: int = 0
     start_at_login: bool = False
+    # UI-only: whether the live camera preview (what the camera sees + detections) is
+    # shown. Off by default — the preview is strictly opt-in.
+    preview_enabled: bool = False
 
     @property
     def protection_state(self) -> ProtectionState:

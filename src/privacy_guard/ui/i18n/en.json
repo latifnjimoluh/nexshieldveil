@@ -68,6 +68,18 @@
   "language.fr": "Français",
   "language.en": "English",
 
+  "preview.title": "Camera preview",
+  "preview.show": "Show the camera",
+  "preview.hide": "Hide the camera",
+  "preview.hint": "Shows what the camera sees and detects. Nothing is recorded or sent.",
+  "preview.off": "Preview off — the camera is not shown.",
+  "preview.legend.primary": "You (primary)",
+  "preview.legend.observer": "Looking at the screen",
+  "preview.legend.idle": "Not looking",
+
+  "main.title": "NexShieldVeil",
+  "main.subtitle": "Anti shoulder-surfing shield",
+
   "masking.veil": "Opaque veil",
   "masking.blur": "Blur",
   "masking.pixelate": "Pixelate",
