@@ -147,8 +147,11 @@ source = ["privacy_guard"]
 # overlay needs a display; opencv_sources needs a real camera/OpenCV; the Qt control
 # window needs a display too. All are adapters exercised manually, not in headless CI.
 # (ui/status.py is pure and stays covered.)
+# overlay: only the Qt adapters need a display; the pure parts (renderer
+# interface + recording renderer, grabber contract + fake) stay covered.
 omit = [
-    "*/overlay/*",
+    "*/overlay/qt_overlay.py",
+    "*/overlay/qt_grabber.py",
     "*/capture/opencv_sources.py",
     "*/ui/control_window.py",
     "*/ui/updater_ui.py",

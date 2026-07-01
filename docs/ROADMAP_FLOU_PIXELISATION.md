@@ -170,16 +170,24 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
 - [x] Rester **pur numpy** (pas de cv2 dans le cœur — contrainte d'architecture existante).
 
 ### M-FP2 — Capture : interface + fake + adaptateur Qt
-- [ ] `overlay/grabber.py` : `ScreenGrabber` (ABC) → `grab_all() -> list[ScreenShot]`
-      où `ScreenShot = (image numpy (H,W,3) uint8, géométrie écran)`. +
-      `FakeScreenGrabber` (images synthétiques, échec scriptable) pour tous les tests.
-- [ ] `overlay/qt_grabber.py` : `QtScreenGrabber` — `QScreen.grabWindow(0)` par écran,
-      conversion QPixmap → QImage → numpy **sans copie disque** (`pragma: no cover`,
-      ajouté à l'`omit` coverage comme les autres adaptateurs display).
-- [ ] Échec de capture (image vide/nulle, exception OS) → retour explicite, jamais
-      d'exception non gérée (P4).
-- [ ] Tests : contrat de l'interface via le fake ; garde AST privacy toujours verte
-      (aucun nouvel import interdit).
+- [x] `overlay/grabber.py` : `ScreenGrabber` (ABC) → `grab_all() -> list[ScreenShot]`
+      où `ScreenShot = (image numpy (H,W,3) uint8 validée, géométrie logique de
+      l'écran — l'image est en pixels physiques sous DPI). + `FakeScreenGrabber`
+      (tir par défaut déterministe non uniforme, échec scriptable, compteur
+      d'appels pour tester la règle « une capture par engagement » — P3). +
+      `looks_blank()` (détection écran verrouillé/DRM → repli voile, P4).
+- [x] `overlay/qt_grabber.py` : `QtScreenGrabber` — `QScreen.grabWindow(0)` par écran,
+      conversion QPixmap → QImage RGB888 → numpy en RAM avec copie possédée (pas
+      d'alias de mémoire Qt, jamais de disque). Adaptateur exclu de la couverture ;
+      *au passage l'`omit` `*/overlay/*` est devenu sélectif : `renderer.py` et
+      `grabber.py` (purs) sont maintenant mesurés — 100 % tous les deux.*
+- [x] Échec de capture (pas d'app Qt, exception OS, pixmap nul, buffer illisible,
+      zéro écran) → `[]` + warning loggé, jamais d'exception (P4) ; l'échec d'UN
+      écran fait échouer TOUTE la capture pour que chaque écran reste voilé.
+- [x] Tests : contrat via le fake (validation `ScreenShot`, échec scriptable,
+      `looks_blank`) en unitaire ; fumée offscreen du `QtScreenGrabber` (contrat
+      jamais-d'exception + aucun fichier écrit) ; garde AST privacy verte telle
+      quelle (Qt seulement, aucun nouvel import).
 
 ### M-FP3 — Compositor (logique pure, le gros des tests)
 - [ ] `overlay/compositor.py` : machine à petits états
