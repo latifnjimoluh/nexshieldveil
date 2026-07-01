@@ -20,7 +20,7 @@ from privacy_guard.overlay.grabber import (
 )
 from privacy_guard.overlay.qt_executor import QtTransformExecutor
 from privacy_guard.overlay.qt_grabber import QtScreenGrabber
-from privacy_guard.overlay.qt_overlay import QtOverlayRenderer, qt_available
+from privacy_guard.overlay.qt_overlay import QtMaskPresenter, QtOverlayRenderer, qt_available
 from privacy_guard.overlay.renderer import RecordingRenderer, Renderer
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "FreezeFrameCompositor",
     "ManualTransformExecutor",
     "MaskPresenter",
+    "QtMaskPresenter",
     "QtOverlayRenderer",
     "QtScreenGrabber",
     "QtTransformExecutor",

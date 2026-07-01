@@ -20,6 +20,7 @@ pytest.importorskip("PySide6", reason="UI tests require the [ui] extra (PySide6)
 from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlComponent, QQmlEngine
+from PySide6.QtWidgets import QApplication
 
 from privacy_guard.ui.fake_controller import FakeController
 from privacy_guard.ui.preview import CameraImageProvider
@@ -39,8 +40,12 @@ from privacy_guard.ui.viewmodels import (
 
 @pytest.fixture(scope="session")
 def qapp() -> QGuiApplication:
-    """A single offscreen QGuiApplication for the whole session (needed for QML)."""
-    app = QGuiApplication.instance() or QGuiApplication([])
+    """A single offscreen QApplication for the whole session.
+
+    QApplication (not QGuiApplication): the overlay presenter tests instantiate
+    QWidget windows, and QML is happy with either.
+    """
+    app = QApplication.instance() or QApplication([])
     return app  # session-scoped; Qt cleans up at interpreter exit
 
 

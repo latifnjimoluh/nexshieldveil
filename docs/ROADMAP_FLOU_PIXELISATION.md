@@ -226,16 +226,31 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
       pour les tests déterministes ; `transform_shots` pur (géométrie préservée).
 
 ### M-FP4 — Overlay : affichage d'image + multi-moniteur
-- [ ] `_OverlayWidget` : nouveau mode « image » (peint une QImage plein écran) en plus
-      du mode « voile » actuel ; le panneau cadenas/message reste par-dessus (l'utilisateur
-      doit toujours comprendre POURQUOI son écran est masqué).
-- [ ] Une fenêtre d'overlay **par écran** (`QGuiApplication.screens()`), chaque écran
-      recevant sa propre capture transformée ; aujourd'hui seul l'écran principal est
-      couvert — la correction vaut aussi pour le voile.
-- [ ] Conserver : frameless, always-on-top, click-through, `WA_ShowWithoutActivating`.
-- [ ] Fondu voile→image court (~120 ms), désactivé si `prefers-reduced-motion`.
-- [ ] Test manuel scripté (`scripts/`) : vérification visuelle Windows (DPI 100 %/150 %,
-      2 écrans si dispo) — documenté, hors CI.
+- [x] `_OverlayWidget` : mode « image » (QImage plein écran, étirée sur le rect
+      logique — le DPI est géré par Qt) en plus du mode « voile » ; le panneau
+      cadenas/message reste toujours par-dessus. La QImage est une copie
+      possédée (`_shot_to_qimage`) : le tableau numpy capturé est libérable dès
+      que l'appelant le lâche, prouvé par un test weakref offscreen.
+- [x] `QtMaskPresenter` (implémente le protocole `MaskPresenter`) : une fenêtre
+      **par écran**, resynchronisée à chaque `show_veil` (écrans branchés/
+      débranchés gérés) ; frames appariées aux écrans par origine logique
+      (x, y) ; frame pour un écran inconnu → ignorée avec warning, l'écran
+      garde le voile (P4). `QtOverlayRenderer` refondu par-dessus le presenter :
+      **le voile couvre maintenant tous les écrans aussi** (correction du
+      mono-écran historique), API `Renderer` inchangée.
+- [x] Conservé et testé offscreen : frameless, always-on-top, click-through
+      (`WindowTransparentForInput` + `WA_TransparentForMouseEvents`),
+      `WA_ShowWithoutActivating`.
+- [x] Fondu voile→image ~120 ms (`QVariantAnimation`), `fade_ms=0` le coupe —
+      branché sur le réglage utilisateur `reduced_motion` du ThemeController à
+      M-FP5 (le masquage lui-même n'est jamais animé, seul l'échange cosmétique
+      qui suit la protection l'est).
+- [x] Test manuel scripté : `scripts/demo_overlay.py` (--strategy blur|pixelate|
+      veil, --seconds, --fade-ms) — smoke offscreen OK (capture blanche → repli
+      voile P4) et vérifié sur écran réel Windows (blur + pixelate, engagement/
+      levée propres, aucun warning P4). 9 tests offscreen couvrent fenêtres par
+      écran, drapeaux, appariement, fondu, libération P2 et les deux chemins de
+      peinture (`grab()`).
 
 ### M-FP5 — Branchement pipeline + config + garde-fou
 - [ ] `app.build_runtime_components` : construire le compositor quand la stratégie
