@@ -146,20 +146,28 @@ et un « présentateur » abstraits, et décide quoi afficher quand. Tout le rai
 ## 5. Jalons
 
 ### M-FP0 — Ce document
-- [ ] Commiter `docs/ROADMAP_FLOU_PIXELISATION.md` + pointeur dans `docs/ROADMAP.md`.
+- [x] Commiter `docs/ROADMAP_FLOU_PIXELISATION.md` + pointeur dans `docs/ROADMAP.md`.
 
 ### M-FP1 — Performance des transformations (préalable, TDD)
 Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
-- [ ] Benchmark de référence : `BlurMask`/`PixelateMask` sur 1920×1080 et 3840×2160
+- [x] Benchmark de référence : `BlurMask`/`PixelateMask` sur 1920×1080 et 3840×2160
       (marqués `performance`). Budget cible : **< 150 ms en 1080p, < 400 ms en 4K**
       (acceptable car le voile opaque couvre déjà l'écran pendant ce temps — P1).
-- [ ] `PixelateMask` : vectoriser (redimensionnement par moyennes de blocs via
-      `reshape`/strides quand divisible, sinon interpolation numpy) — supprimer la
-      double boucle Python.
-- [ ] `BlurMask` : passer le travail interne en `float32` (÷2 la mémoire), et ajouter
-      le classique **downscale → blur → upscale** (qualité visuelle équivalente pour
-      un rayon large, coût divisé par ~16). Garder l'API et les tests existants verts.
-- [ ] Rester **pur numpy** (pas de cv2 dans le cœur — contrainte d'architecture existante).
+      *Mesuré avant/après (machine de dev) : blur 1080p 231→75 ms, blur 4K
+      1316→306 ms, pixelate 4K ~226 ms.*
+- [x] `PixelateMask` : vectoriser (sommes de blocs `np.add.reduceat` sur les deux
+      axes + `np.repeat` exact sur les comptes de blocs) — double boucle Python
+      supprimée, tuilage identique (blocs de bord partiels inclus).
+- [x] `BlurMask` : travail interne en `float32`, et **downscale → blur → upscale**
+      pour les rayons larges. *Choix mesurés au micro-banc (le trafic mémoire domine) :
+      downscale par accumulation de phases stridées (7,5× plus rapide que
+      `reshape().mean()`), upsample bilinéaire par tranches de phases (vues décalées,
+      zéro gather — les gathers pleine résolution étaient le goulot), padding de bord
+      pour les tailles non divisibles, conversion uint8 fusionnée dans la passe finale.
+      Écart vs blur direct pleine résolution : diff moyenne 0,7/255, p99 = 6 (bruit pur,
+      pire cas) — testé unitairement. Les petits rayons restent sur le chemin direct
+      (un flou faible masque peu ; ce n'est pas le cas à optimiser).*
+- [x] Rester **pur numpy** (pas de cv2 dans le cœur — contrainte d'architecture existante).
 
 ### M-FP2 — Capture : interface + fake + adaptateur Qt
 - [ ] `overlay/grabber.py` : `ScreenGrabber` (ABC) → `grab_all() -> list[ScreenShot]`

@@ -136,6 +136,49 @@ def test_blur_rejects_bad_radius() -> None:
         BlurMask(radius=0)
 
 
+# The wide-radius path (M-FP1) downsamples, blurs small, then upsamples. It must
+# honour the exact same invariants as the direct path, including on image sizes
+# that are not multiples of the internal scale (edge-pad branch).
+@pytest.mark.parametrize(("h", "w"), [(96, 96), (97, 101)])
+def test_blur_reduced_path_invariants(h: int, w: int) -> None:
+    strategy = BlurMask(radius=21)
+    assert strategy._scale_for(h, w) > 1  # guard: this size/radius takes the reduced path
+    img = _noisy(h, w)
+    out = strategy.apply(img)
+    assert out.shape == img.shape
+    assert out.dtype == np.uint8
+    assert out.var() < img.var()
+    assert out.mean() == pytest.approx(img.mean(), abs=2.0)
+
+
+@pytest.mark.parametrize(("h", "w"), [(96, 96), (97, 101)])
+def test_blur_reduced_path_keeps_flat_image_flat(h: int, w: int) -> None:
+    out = BlurMask(radius=21).apply(_constant(120, h, w))
+    assert np.all(out == 120)
+
+
+def test_blur_reduced_path_close_to_direct_blur() -> None:
+    # The downscale approximation must stay visually equivalent to the direct
+    # full-resolution box blur. Pure noise is the worst case; the size is large
+    # enough that edge-clamp differences don't dominate the statistics.
+    img = _noisy(360, 480)
+    strategy = BlurMask(radius=21)
+    reduced = strategy.apply(img).astype(np.float64)
+    direct = img.astype(np.float32)
+    direct = strategy._blur_axis(direct, strategy.radius, axis=0)
+    direct = strategy._blur_axis(direct, strategy.radius, axis=1)
+    diff = np.abs(reduced - np.clip(direct + 0.5, 0, 255).astype(np.uint8))
+    assert diff.mean() < 2.0
+    assert np.percentile(diff, 99) < 12.0
+
+
+def test_blur_scale_grows_with_radius_and_clamps_on_small_images() -> None:
+    assert BlurMask(radius=5)._scale_for(2160, 3840) == 1  # weak blur: direct path
+    assert BlurMask(radius=21)._scale_for(2160, 3840) == 3
+    assert BlurMask(radius=199)._scale_for(2160, 3840) == 8  # capped
+    assert BlurMask(radius=21)._scale_for(40, 40) == 1  # never below ~32 px a side
+
+
 # --------------------------------------------------------------------------- #
 # factory
 # --------------------------------------------------------------------------- #
