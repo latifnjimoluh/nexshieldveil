@@ -121,6 +121,8 @@ avec temporisation (déclenchement après N ms de regard détecté, levée aprè
 - [x] Interface `MaskStrategy` + impléms (voile opaque, pixelisation, flou box numpy pur).
       *Note honnête : le flou est un box-blur numpy sur l'image, pas une capture mss GPU
       (notée en évolution future). Le voile/pixelisation couvrent le MVP.*
+      *Évolution planifiée : le branchement « live » du flou/pixelisation (capture d'écran
+      locale freeze-frame) est spécifié dans `docs/ROADMAP_FLOU_PIXELISATION.md`.*
 - [x] Tests via interface de rendu mockée (sans fenêtre réelle).
 
 ### M8 — `overlay` (adaptateur UI Qt)
