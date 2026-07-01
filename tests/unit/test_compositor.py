@@ -18,11 +18,13 @@ import pytest
 
 from privacy_guard.masking import BlurMask, MaskStrategy
 from privacy_guard.overlay import (
+    CompositorRenderer,
     CompositorState,
     FakeScreenGrabber,
     FreezeFrameCompositor,
     ManualTransformExecutor,
     RecordingPresenter,
+    Renderer,
     ScreenShot,
     SynchronousTransformExecutor,
     transform_shots,
@@ -266,6 +268,35 @@ def test_empty_transform_result_stays_on_opaque_veil() -> None:
     executor.deliver_empty()
     assert presenter.frames_shown == []
     assert compositor.state is CompositorState.VEILED
+
+
+# --------------------------------------------------------------------------- #
+# CompositorRenderer: the Renderer facade the pipeline drives (M-FP5)
+# --------------------------------------------------------------------------- #
+def test_compositor_renderer_maps_set_masked_to_engage_and_disengage() -> None:
+    compositor, grabber, presenter = _build()
+    renderer = CompositorRenderer(compositor)
+    assert isinstance(renderer, Renderer)
+    assert renderer.is_masked is False
+    renderer.set_masked(True)
+    assert renderer.is_masked is True
+    assert compositor.state is CompositorState.TRANSFORMED
+    renderer.set_masked(True)  # idempotent: still one capture (P3)
+    assert grabber.calls == 1
+    renderer.set_masked(False)
+    assert renderer.is_masked is False
+    assert presenter.hide_calls == 1
+
+
+def test_compositor_renderer_close_lifts_and_tears_down() -> None:
+    compositor, _grabber, presenter = _build()
+    closed: list[bool] = []
+    renderer = CompositorRenderer(compositor, on_close=lambda: closed.append(True))
+    renderer.set_masked(True)
+    renderer.close()
+    assert compositor.state is CompositorState.IDLE
+    assert presenter.hide_calls == 1
+    assert closed == [True]
 
 
 # --------------------------------------------------------------------------- #

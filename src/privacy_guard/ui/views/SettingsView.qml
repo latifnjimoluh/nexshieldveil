@@ -136,6 +136,15 @@ Item {
                     }
                 }
 
+                FieldLabel {
+                    // Honest note: capture-based styles grab the screen locally.
+                    visible: settingsVM.masking_strategy !== "veil"
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Theme.fontSize("caption")
+                    text: Tr.t("settings.masking.capture_note")
+                }
+
                 FieldLabel { text: Tr.t("settings.opacity") }
                 Slider {
                     objectName: "opacitySlider"
@@ -144,6 +153,59 @@ Item {
                     value: settingsVM.opacity
                     Accessible.name: Tr.t("settings.opacity")
                     onMoved: settingsVM.set_opacity(value)
+                }
+
+                FieldLabel {
+                    visible: settingsVM.masking_strategy === "blur"
+                    text: Tr.t("settings.blur_radius")
+                }
+                Row {
+                    visible: settingsVM.masking_strategy === "blur"
+                    width: parent.width
+                    spacing: Theme.space("md")
+                    Slider {
+                        objectName: "blurRadiusSlider"
+                        width: parent.width * 0.7
+                        // Bounds mirror config.models.MaskingConfig.blur_radius.
+                        from: 1; to: 199; stepSize: 2
+                        value: settingsVM.blur_radius
+                        Accessible.name: Tr.t("settings.blur_radius")
+                        onMoved: settingsVM.set_blur_radius(value)
+                    }
+                    ValueLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: settingsVM.blur_radius_caption
+                    }
+                }
+
+                FieldLabel {
+                    visible: settingsVM.masking_strategy === "pixelate"
+                    text: Tr.t("settings.pixelate_blocks")
+                }
+                Row {
+                    visible: settingsVM.masking_strategy === "pixelate"
+                    width: parent.width
+                    spacing: Theme.space("md")
+                    Slider {
+                        objectName: "pixelateBlocksSlider"
+                        width: parent.width * 0.7
+                        // Bounds mirror config.models.MaskingConfig.pixelate_blocks.
+                        from: 2; to: 256; stepSize: 2
+                        value: settingsVM.pixelate_blocks
+                        Accessible.name: Tr.t("settings.pixelate_blocks")
+                        onMoved: settingsVM.set_pixelate_blocks(value)
+                    }
+                    ValueLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: settingsVM.pixelate_blocks_caption
+                    }
+                }
+                FieldLabel {
+                    visible: settingsVM.masking_strategy === "pixelate"
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Theme.fontSize("caption")
+                    text: Tr.t("settings.pixelate_blocks.hint")
                 }
 
                 Rectangle { width: parent.width; height: 1; color: Theme.line }

@@ -13,6 +13,12 @@ from enum import Enum
 
 from privacy_guard.policy import PolicyState
 
+# UI-side clamps for the masking parameters. They mirror the validation bounds
+# of ``config.models.MaskingConfig`` (blur_radius 1-199, pixelate_blocks 2-256);
+# keeping them here lets the Qt-free controller clamp without importing pydantic.
+BLUR_RADIUS_RANGE = (1, 199)
+PIXELATE_BLOCKS_RANGE = (2, 256)
+
 
 class ProtectionState(Enum):
     """The four states the UI ever shows the user.
@@ -85,6 +91,8 @@ class UiSnapshot:
     # Mirrors of the relevant config the UI lets the user change.
     masking_strategy: str = "veil"
     opacity: float = 0.92
+    blur_radius: int = 21
+    pixelate_blocks: int = 24
     sensitivity_deg: float = 18.0
     trigger_ms: int = 400
     release_ms: int = 800

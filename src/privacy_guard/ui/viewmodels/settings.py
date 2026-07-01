@@ -66,6 +66,18 @@ class SettingsViewModel(QObject):
     def _get_masking_strategy(self) -> str:
         return self._c.snapshot.masking_strategy
 
+    def _get_blur_radius(self) -> int:
+        return self._c.snapshot.blur_radius
+
+    def _get_blur_radius_caption(self) -> str:
+        return self._tr.tr_key("unit.px", value=self._c.snapshot.blur_radius)
+
+    def _get_pixelate_blocks(self) -> int:
+        return self._c.snapshot.pixelate_blocks
+
+    def _get_pixelate_blocks_caption(self) -> str:
+        return self._tr.tr_key("unit.blocks", value=self._c.snapshot.pixelate_blocks)
+
     def _get_masking_options(self) -> list[dict[str, object]]:
         options: list[dict[str, object]] = []
         for name in _STRATEGIES:
@@ -106,6 +118,10 @@ class SettingsViewModel(QObject):
     opacity = Property(float, _get_opacity, notify=changed)
     masking_strategy = Property(str, _get_masking_strategy, notify=changed)
     masking_options = Property("QVariantList", _get_masking_options, notify=changed)
+    blur_radius = Property(int, _get_blur_radius, notify=changed)
+    blur_radius_caption = Property(str, _get_blur_radius_caption, notify=changed)
+    pixelate_blocks = Property(int, _get_pixelate_blocks, notify=changed)
+    pixelate_blocks_caption = Property(str, _get_pixelate_blocks_caption, notify=changed)
     camera_index = Property(int, _get_camera_index, notify=changed)
     start_at_login = Property(bool, _get_start_at_login, notify=changed)
     language = Property(str, _get_language, notify=changed)
@@ -136,6 +152,16 @@ class SettingsViewModel(QObject):
     def set_masking_strategy(self, strategy: str) -> None:
         """Update the masking strategy (UI should only let the user pick live ones)."""
         self._c.set_masking_strategy(strategy)
+
+    @Slot(int)
+    def set_blur_radius(self, radius: int) -> None:
+        """Update the blur radius (clamped to the config bounds)."""
+        self._c.set_blur_radius(radius)
+
+    @Slot(int)
+    def set_pixelate_blocks(self, blocks: int) -> None:
+        """Update the pixelation block count (clamped to the config bounds)."""
+        self._c.set_pixelate_blocks(blocks)
 
     @Slot(int)
     def select_camera(self, index: int) -> None:

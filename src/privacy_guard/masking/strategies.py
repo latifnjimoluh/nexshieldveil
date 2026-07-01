@@ -291,18 +291,19 @@ class BlurMask(MaskStrategy):
         return result
 
 
-# Strategies the *live overlay* can apply today. The overlay only paints an
-# opaque veil; it does not capture the screen, so the pixel-transforming
-# strategies (pixelate/blur) are tested building blocks for the future
-# capture-based masking path and are NOT yet wired to the live overlay.
-RUNTIME_OVERLAY_STRATEGIES = frozenset({"veil"})
+# Strategies the *live overlay* can apply today. Since M-FP5
+# (docs/ROADMAP_FLOU_PIXELISATION.md) all three are live: `veil` paints an
+# opaque layer without ever capturing the screen; `pixelate`/`blur` run the
+# freeze-frame path (one local capture at masking time, transformed off-thread,
+# kept in RAM only and released when the mask lifts).
+RUNTIME_OVERLAY_STRATEGIES = frozenset({"veil", "pixelate", "blur"})
 
 
 def overlay_strategy_is_live(strategy: str) -> bool:
     """Whether ``strategy`` is actually applied by the live overlay today.
 
-    ``pixelate``/``blur`` require capturing on-screen pixels (a future evolution),
-    so selecting them at runtime falls back to an opaque veil with a warning.
+    Kept as the single honesty gate: the UI greys out (with a "soon" note) any
+    strategy this returns ``False`` for, and would fall back to the veil.
     """
     return strategy in RUNTIME_OVERLAY_STRATEGIES
 

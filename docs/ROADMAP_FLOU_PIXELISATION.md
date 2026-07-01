@@ -253,17 +253,29 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
       peinture (`grab()`).
 
 ### M-FP5 — Branchement pipeline + config + garde-fou
-- [ ] `app.build_runtime_components` : construire le compositor quand la stratégie
-      est `pixelate`/`blur` ; supprimer le warning de repli.
-- [ ] Élargir `RUNTIME_OVERLAY_STRATEGIES` à `{"veil", "pixelate", "blur"}` — **en
-      dernier**, quand tout le reste est vert : c'est l'interrupteur qui change l'UI
-      (les mentions « bientôt disponible » disparaissent d'elles-mêmes) et le
-      comportement runtime.
-- [ ] Réglages UI : exposer `blur_radius` et `pixelate_blocks` (sliders bornés par la
-      config pydantic existante 1–199 / 2–256) dans `SettingsView.qml` +
-      `SettingsViewModel` + snapshot/contrôleur, avec aperçu textuel honnête.
-- [ ] i18n FR/EN : nouvelles clés (descriptions des stratégies, mention « capture
-      locale, jamais enregistrée », erreurs de capture) — parité testée comme aujourd'hui.
+- [x] `build_qt_masking_renderer(MaskingConfig, fade_ms)` (fabrique dans
+      `qt_overlay.py`, testée offscreen pour les 3 stratégies) : `veil` →
+      compositor en mode voile pur (zéro capture) ; `blur`/`pixelate` → pile
+      freeze-frame complète (QtScreenGrabber + QtTransformExecutor +
+      QtMaskPresenter) enveloppée dans `CompositorRenderer` (façade `Renderer`
+      pure, testée unitairement). `app.build_runtime_components` l'utilise ;
+      warning de repli supprimé. Côté shell, `CoreController` reconstruit
+      l'overlay **depuis le snapshot courant** (`masking_config_from_snapshot`,
+      pur et testé) : les changements de style/paramètres dans les Réglages
+      prennent effet immédiatement, sans redémarrage ; `fade_ms=0` est passé
+      quand `reduced_motion` est actif.
+- [x] `RUNTIME_OVERLAY_STRATEGIES` élargi à `{"veil", "pixelate", "blur"}` en
+      dernier, tout le reste étant vert — les mentions « bientôt » ont disparu
+      d'elles-mêmes de l'UI (testé) ; le garde-fou reste en place pour toute
+      stratégie future non implémentée.
+- [x] Réglages UI : sliders `blur_radius` (1–199) et `pixelate_blocks` (2–256),
+      visibles selon la stratégie choisie, avec légendes (`41 px` / `12 blocs`)
+      et clamps côté contrôleur (bornes miroir de la config pydantic, testées).
+- [x] i18n FR/EN : `settings.blur_radius`, `settings.pixelate_blocks` (+ hint),
+      `settings.masking.capture_note` (« capture locale, gardée en mémoire
+      uniquement pendant le masquage — jamais enregistrée ni envoyée », affichée
+      dès qu'un style à capture est sélectionné), `unit.px`, `unit.blocks` —
+      parité vérifiée par les tests existants.
 
 ### M-FP6 — Confidentialité (extension des garanties, pas juste « pas de régression »)
 - [ ] `tests/privacy/` : nouveaux tests dédiés à la frame d'écran :

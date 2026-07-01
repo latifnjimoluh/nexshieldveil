@@ -7,8 +7,12 @@ import pytest
 from privacy_guard.app import FrameResult
 from privacy_guard.config import AppConfig
 from privacy_guard.policy import PolicyState
-from privacy_guard.ui.core_controller import CoreController, snapshot_from_config
-from privacy_guard.ui.state import ProtectionState
+from privacy_guard.ui.core_controller import (
+    CoreController,
+    masking_config_from_snapshot,
+    snapshot_from_config,
+)
+from privacy_guard.ui.state import ProtectionState, UiSnapshot
 
 pytestmark = pytest.mark.unit
 
@@ -34,6 +38,24 @@ def test_snapshot_from_config_mirrors_values() -> None:
     assert snap.trigger_ms == cfg.policy.trigger_ms
     assert snap.release_ms == cfg.policy.release_ms
     assert snap.opacity == cfg.masking.opacity
+    assert snap.blur_radius == cfg.masking.blur_radius
+    assert snap.pixelate_blocks == cfg.masking.pixelate_blocks
+
+
+def test_masking_config_from_snapshot_reflects_runtime_settings() -> None:
+    # The overlay is rebuilt from the snapshot so settings edits apply live.
+    snap = UiSnapshot(masking_strategy="blur", opacity=0.5, blur_radius=41, pixelate_blocks=12)
+    masking = masking_config_from_snapshot(snap)
+    assert masking.strategy == "blur"
+    assert masking.opacity == 0.5
+    assert masking.blur_radius == 41
+    assert masking.pixelate_blocks == 12
+
+
+def test_masking_config_from_snapshot_roundtrips_the_defaults() -> None:
+    cfg = AppConfig()
+    snap = snapshot_from_config(cfg)
+    assert masking_config_from_snapshot(snap) == cfg.masking
 
 
 def test_apply_frame_result_sets_protected(qapp) -> None:

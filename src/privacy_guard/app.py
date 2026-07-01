@@ -27,7 +27,6 @@ from privacy_guard.geometry import (
     gaze_vector,
     select_primary_user,
 )
-from privacy_guard.masking import overlay_strategy_is_live
 from privacy_guard.overlay import RecordingRenderer, Renderer
 from privacy_guard.policy import DecisionStateMachine, PolicyState
 from privacy_guard.tracking import ExponentialSmoother
@@ -206,7 +205,7 @@ def build_runtime_components(
     camera and model are available.
     """
     from privacy_guard.capture import WebcamFrameSource, opencv_available
-    from privacy_guard.overlay import QtOverlayRenderer, qt_available
+    from privacy_guard.overlay import build_qt_masking_renderer, qt_available
     from privacy_guard.vision import (
         MediaPipeFaceDetector,
         ScriptedFaceDetector,
@@ -237,13 +236,9 @@ def build_runtime_components(
 
     renderer: Renderer
     if qt_available():
-        if not overlay_strategy_is_live(config.masking.strategy):
-            logger.warning(
-                "Masking strategy %r is not yet wired to the live overlay (it needs "
-                "screen capture, a future evolution); applying an opaque veil instead.",
-                config.masking.strategy,
-            )
-        renderer = QtOverlayRenderer(opacity=config.masking.opacity)
+        # veil -> opaque multi-screen veil; blur/pixelate -> freeze-frame stack
+        # (one local capture at masking time, transformed off-thread). M-FP5.
+        renderer = build_qt_masking_renderer(config.masking)
     else:
         logger.warning("PySide6 unavailable; using a headless recording renderer.")
         renderer = RecordingRenderer()

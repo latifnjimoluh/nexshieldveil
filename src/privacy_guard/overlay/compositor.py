@@ -26,6 +26,7 @@ from typing import Protocol
 
 from privacy_guard.masking import MaskStrategy
 from privacy_guard.overlay.grabber import ScreenGrabber, ScreenShot, looks_blank
+from privacy_guard.overlay.renderer import Renderer
 
 logger = logging.getLogger(__name__)
 
@@ -224,3 +225,37 @@ class FreezeFrameCompositor:
             return  # transform failed (P4): the opaque veil is already protecting
         self._presenter.show_frames(frames)
         self._state = CompositorState.TRANSFORMED
+
+
+class CompositorRenderer(Renderer):
+    """:class:`Renderer` facade over a :class:`FreezeFrameCompositor`.
+
+    This is what the pipeline drives: ``set_masked(True)`` engages the
+    compositor (capture -> veil -> transform), ``set_masked(False)`` lifts it.
+    ``on_close`` lets the builder pass the presenter's teardown along.
+    """
+
+    def __init__(
+        self, compositor: FreezeFrameCompositor, on_close: Callable[[], None] | None = None
+    ) -> None:
+        """Wrap ``compositor``; ``on_close`` runs after disengaging on close()."""
+        self._compositor = compositor
+        self._on_close = on_close
+
+    def set_masked(self, masked: bool) -> None:
+        """Engage or lift the freeze-frame masking."""
+        if masked:
+            self._compositor.engage()
+        else:
+            self._compositor.disengage()
+
+    @property
+    def is_masked(self) -> bool:
+        """Whether the masking layer is currently engaged."""
+        return self._compositor.is_engaged
+
+    def close(self) -> None:
+        """Lift the mask and tear down the presenter's windows."""
+        self._compositor.disengage()
+        if self._on_close is not None:
+            self._on_close()

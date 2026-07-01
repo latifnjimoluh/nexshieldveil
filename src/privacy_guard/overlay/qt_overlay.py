@@ -22,11 +22,15 @@ screen (see docs/LIMITATIONS.md).
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from privacy_guard.overlay.grabber import ScreenShot
 from privacy_guard.overlay.renderer import Renderer
+
+if TYPE_CHECKING:
+    from privacy_guard.config import MaskingConfig
 
 try:  # pragma: no cover - import guard
     from PySide6.QtCore import QRectF, Qt, QVariantAnimation
@@ -308,6 +312,35 @@ class QtMaskPresenter:  # pragma: no cover - Qt adapter (tested offscreen)
             widget.deleteLater()
         self._widgets.clear()
         self._app.processEvents()
+
+
+def build_qt_masking_renderer(
+    masking: MaskingConfig, fade_ms: int = _DEFAULT_FADE_MS
+) -> Renderer:  # pragma: no cover - Qt adapter (assembled pieces tested separately)
+    """Build the full masking renderer for a ``MaskingConfig`` (M-FP5).
+
+    ``veil`` -> compositor in veil-only mode (no capture, ever). ``blur``/
+    ``pixelate`` -> freeze-frame stack: Qt screen grabber + off-thread transform
+    + per-screen presenter. Must be called on the UI thread (the transform
+    executor delivers its results back to the constructing thread).
+
+    Raises:
+        RuntimeError: If PySide6 is unavailable.
+    """
+    from privacy_guard.masking import make_mask_strategy
+    from privacy_guard.overlay.compositor import CompositorRenderer, FreezeFrameCompositor
+    from privacy_guard.overlay.qt_executor import QtTransformExecutor
+    from privacy_guard.overlay.qt_grabber import QtScreenGrabber
+
+    presenter = QtMaskPresenter(opacity=masking.opacity, fade_ms=fade_ms)
+    strategy = None if masking.strategy == "veil" else make_mask_strategy(masking)
+    compositor = FreezeFrameCompositor(
+        grabber=QtScreenGrabber(),
+        strategy=strategy,
+        presenter=presenter,
+        executor=QtTransformExecutor(),
+    )
+    return CompositorRenderer(compositor, on_close=presenter.close)
 
 
 class QtOverlayRenderer(Renderer):  # pragma: no cover - Qt adapter (tested offscreen)

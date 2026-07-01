@@ -191,10 +191,15 @@ def test_factory_builds_configured_strategy(name: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# live-overlay support (honesty: only veil is wired today)
+# live-overlay support (since M-FP5 all three strategies are wired live)
 # --------------------------------------------------------------------------- #
-def test_only_veil_is_live_on_the_overlay() -> None:
+def test_all_configured_strategies_are_live_on_the_overlay() -> None:
     assert overlay_strategy_is_live("veil") is True
-    assert overlay_strategy_is_live("pixelate") is False
-    assert overlay_strategy_is_live("blur") is False
-    assert set(RUNTIME_OVERLAY_STRATEGIES) == {"veil"}
+    assert overlay_strategy_is_live("pixelate") is True
+    assert overlay_strategy_is_live("blur") is True
+    assert set(RUNTIME_OVERLAY_STRATEGIES) == {"veil", "pixelate", "blur"}
+
+
+def test_unknown_strategies_are_still_gated() -> None:
+    # The honesty gate stays meaningful for anything not actually implemented.
+    assert overlay_strategy_is_live("hologram") is False

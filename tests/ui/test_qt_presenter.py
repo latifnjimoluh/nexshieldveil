@@ -18,7 +18,14 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from privacy_guard.overlay import QtMaskPresenter, QtOverlayRenderer, ScreenShot
+from privacy_guard.config import MaskingConfig
+from privacy_guard.overlay import (
+    CompositorRenderer,
+    QtMaskPresenter,
+    QtOverlayRenderer,
+    ScreenShot,
+    build_qt_masking_renderer,
+)
 
 pytestmark = pytest.mark.component
 
@@ -152,6 +159,22 @@ def test_paint_paths_render_offscreen_in_both_modes(
     presenter.show_frames([_frame_for_screen(qapp)])
     frame_shot = widget.grab()
     assert not frame_shot.isNull()
+
+
+@pytest.mark.parametrize("strategy", ["veil", "blur", "pixelate"])
+def test_masking_renderer_factory_builds_a_working_stack(qapp: QApplication, strategy: str) -> None:
+    # M-FP5 wiring: every configured strategy yields a full Renderer stack that
+    # can engage/lift offscreen (capture is blank there -> P4 veil, no crash).
+    renderer = build_qt_masking_renderer(MaskingConfig(strategy=strategy), fade_ms=0)
+    try:
+        assert isinstance(renderer, CompositorRenderer)
+        renderer.set_masked(True)
+        assert renderer.is_masked is True
+        renderer.set_masked(False)
+        assert renderer.is_masked is False
+    finally:
+        renderer.close()
+        qapp.processEvents()
 
 
 def test_renderer_veils_every_screen_and_tracks_state(qapp: QApplication) -> None:

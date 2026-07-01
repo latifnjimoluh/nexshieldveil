@@ -58,6 +58,10 @@
   "settings.release.hint": "Toujours supérieur ou égal au délai avant masquage, pour éviter le clignotement.",
   "settings.opacity": "Opacité du voile",
   "settings.masking.style": "Style de masquage",
+  "settings.blur_radius": "Intensité du flou",
+  "settings.pixelate_blocks": "Finesse de la pixelisation",
+  "settings.pixelate_blocks.hint": "Moins de blocs = plus grossier, donc plus difficile à lire.",
+  "settings.masking.capture_note": "Le flou et la pixelisation utilisent une capture locale de l'écran, gardée en mémoire uniquement pendant le masquage — jamais enregistrée ni envoyée.",
   "settings.camera.device": "Caméra utilisée",
   "settings.shortcut": "Raccourci de bascule",
   "settings.start_at_login": "Démarrer à la session",
@@ -92,6 +96,8 @@
 
   "unit.deg": "{value}°",
   "unit.ms": "{value} ms",
+  "unit.px": "{value} px",
+  "unit.blocks": "{value} blocs",
 
   "about.title": "À propos & limites",
   "about.version": "Version {version}",

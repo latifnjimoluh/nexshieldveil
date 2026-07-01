@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from privacy_guard.overlay.compositor import (
+    CompositorRenderer,
     CompositorState,
     FreezeFrameCompositor,
     ManualTransformExecutor,
@@ -20,10 +21,16 @@ from privacy_guard.overlay.grabber import (
 )
 from privacy_guard.overlay.qt_executor import QtTransformExecutor
 from privacy_guard.overlay.qt_grabber import QtScreenGrabber
-from privacy_guard.overlay.qt_overlay import QtMaskPresenter, QtOverlayRenderer, qt_available
+from privacy_guard.overlay.qt_overlay import (
+    QtMaskPresenter,
+    QtOverlayRenderer,
+    build_qt_masking_renderer,
+    qt_available,
+)
 from privacy_guard.overlay.renderer import RecordingRenderer, Renderer
 
 __all__ = [
+    "CompositorRenderer",
     "CompositorState",
     "FakeScreenGrabber",
     "FreezeFrameCompositor",
@@ -40,6 +47,7 @@ __all__ = [
     "ScreenShot",
     "SynchronousTransformExecutor",
     "TransformExecutor",
+    "build_qt_masking_renderer",
     "looks_blank",
     "qt_available",
     "transform_shots",

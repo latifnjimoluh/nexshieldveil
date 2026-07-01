@@ -21,7 +21,12 @@ import dataclasses
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from privacy_guard.ui.state import CameraError, UiSnapshot
+from privacy_guard.ui.state import (
+    BLUR_RADIUS_RANGE,
+    PIXELATE_BLOCKS_RANGE,
+    CameraError,
+    UiSnapshot,
+)
 
 
 class AppController(QObject):
@@ -115,6 +120,12 @@ class AppController(QObject):
     def _get_opacity(self) -> float:
         return self._snap.opacity
 
+    def _get_blur_radius(self) -> int:
+        return self._snap.blur_radius
+
+    def _get_pixelate_blocks(self) -> int:
+        return self._snap.pixelate_blocks
+
     def _get_sensitivity_deg(self) -> float:
         return self._snap.sensitivity_deg
 
@@ -141,6 +152,8 @@ class AppController(QObject):
     running = Property(bool, _get_running, notify=running_changed)
     masking_strategy = Property(str, _get_masking_strategy, notify=config_changed)
     opacity = Property(float, _get_opacity, notify=config_changed)
+    blur_radius = Property(int, _get_blur_radius, notify=config_changed)
+    pixelate_blocks = Property(int, _get_pixelate_blocks, notify=config_changed)
     sensitivity_deg = Property(float, _get_sensitivity_deg, notify=config_changed)
     trigger_ms = Property(int, _get_trigger_ms, notify=config_changed)
     release_ms = Property(int, _get_release_ms, notify=config_changed)
@@ -178,6 +191,18 @@ class AppController(QObject):
     def set_opacity(self, opacity: float) -> None:
         """Set the veil opacity, clamped to ``[0, 1]``."""
         self._update(opacity=min(1.0, max(0.0, float(opacity))))
+
+    @Slot(int)
+    def set_blur_radius(self, radius: int) -> None:
+        """Set the blur radius, clamped to the config bounds."""
+        lo, hi = BLUR_RADIUS_RANGE
+        self._update(blur_radius=min(hi, max(lo, int(radius))))
+
+    @Slot(int)
+    def set_pixelate_blocks(self, blocks: int) -> None:
+        """Set the pixelation block count, clamped to the config bounds."""
+        lo, hi = PIXELATE_BLOCKS_RANGE
+        self._update(pixelate_blocks=min(hi, max(lo, int(blocks))))
 
     @Slot(float)
     def set_sensitivity_deg(self, deg: float) -> None:

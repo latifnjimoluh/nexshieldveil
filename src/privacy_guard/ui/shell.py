@@ -144,7 +144,9 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     translator = Translator(lang)
     theme = ThemeController(dark=not args.light)
 
-    controller = CoreController(config, model_path)
+    # Reduced motion also disables the overlay's veil->frame crossfade (the
+    # masking itself is never animated; only the cosmetic swap after it is).
+    controller = CoreController(config, model_path, fade_ms=0 if theme.reduced_motion else 120)
     provider = CameraImageProvider()
     status_vm = StatusViewModel(controller, translator)
     settings_vm = SettingsViewModel(controller, translator)

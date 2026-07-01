@@ -100,9 +100,11 @@ class PrimaryUserConfig(_StrictModel):
 class MaskingConfig(_StrictModel):
     """Masking layer settings.
 
-    Only ``veil`` is wired to the live overlay today; ``pixelate``/``blur`` are
-    tested image-transform building blocks for a future capture-based path and fall
-    back to the veil at runtime (see ``masking.overlay_strategy_is_live``).
+    All three strategies are live on the overlay: ``veil`` never captures the
+    screen; ``pixelate``/``blur`` transform one local screen capture taken at
+    masking time (freeze-frame), kept in RAM only and released when the mask
+    lifts (see ``masking.overlay_strategy_is_live`` and
+    ``docs/ROADMAP_FLOU_PIXELISATION.md``).
     """
 
     strategy: MaskStrategyName = "veil"

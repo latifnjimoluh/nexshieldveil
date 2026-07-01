@@ -76,6 +76,27 @@ def test_negative_trigger_is_floored_to_zero(ctrl: FakeController) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# masking parameters are clamped to the config bounds (M-FP5)
+# --------------------------------------------------------------------------- #
+def test_set_blur_radius_is_clamped_to_config_bounds(ctrl: FakeController) -> None:
+    ctrl.set_blur_radius(50)
+    assert ctrl.property("blur_radius") == 50
+    ctrl.set_blur_radius(0)
+    assert ctrl.property("blur_radius") == 1
+    ctrl.set_blur_radius(10_000)
+    assert ctrl.property("blur_radius") == 199
+
+
+def test_set_pixelate_blocks_is_clamped_to_config_bounds(ctrl: FakeController) -> None:
+    ctrl.set_pixelate_blocks(32)
+    assert ctrl.property("pixelate_blocks") == 32
+    ctrl.set_pixelate_blocks(1)
+    assert ctrl.property("pixelate_blocks") == 2
+    ctrl.set_pixelate_blocks(10_000)
+    assert ctrl.property("pixelate_blocks") == 256
+
+
+# --------------------------------------------------------------------------- #
 # config setters emit config_changed; no-op writes emit nothing
 # --------------------------------------------------------------------------- #
 def test_config_setters_emit_config_changed(ctrl: FakeController, record) -> None:

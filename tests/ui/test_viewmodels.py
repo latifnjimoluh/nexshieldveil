@@ -196,15 +196,13 @@ def test_settings_trigger_raises_release(env) -> None:
     assert vm.property("release_floor") == 1000
 
 
-def test_settings_masking_options_honesty(env) -> None:
+def test_settings_masking_options_all_live_since_mfp5(env) -> None:
     ctrl, tr = env
     vm = SettingsViewModel(ctrl, tr)
     options = {o["id"]: o for o in vm.property("masking_options")}
-    assert options["veil"]["live"] is True
-    assert options["veil"]["note"] == ""
-    assert options["blur"]["live"] is False
-    assert options["blur"]["note"] == "bientôt"
-    assert options["pixelate"]["live"] is False
+    for name in ("veil", "blur", "pixelate"):
+        assert options[name]["live"] is True
+        assert options[name]["note"] == ""  # no more "soon" note anywhere
 
 
 def test_settings_forwards_edits(env) -> None:
@@ -218,6 +216,17 @@ def test_settings_forwards_edits(env) -> None:
     assert ctrl.property("opacity") == 0.5
     assert ctrl.property("camera_index") == 3
     assert ctrl.property("start_at_login") is True
+
+
+def test_settings_masking_parameters_and_captions(env) -> None:
+    ctrl, tr = env
+    vm = SettingsViewModel(ctrl, tr)
+    vm.set_blur_radius(41)
+    vm.set_pixelate_blocks(12)
+    assert vm.property("blur_radius") == 41
+    assert vm.property("blur_radius_caption") == "41 px"
+    assert vm.property("pixelate_blocks") == 12
+    assert vm.property("pixelate_blocks_caption") == "12 blocs"  # env fixture is fr
 
 
 def test_settings_language_switch(env) -> None:

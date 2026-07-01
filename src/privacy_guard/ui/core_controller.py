@@ -17,7 +17,7 @@ import logging
 from PySide6.QtCore import QObject, QThread, Signal
 
 from privacy_guard.app import FrameResult
-from privacy_guard.config import AppConfig
+from privacy_guard.config import AppConfig, MaskingConfig
 from privacy_guard.ui.controller import AppController
 from privacy_guard.ui.state import CameraError, UiSnapshot
 
@@ -30,10 +30,26 @@ def snapshot_from_config(config: AppConfig) -> UiSnapshot:
         running=False,
         masking_strategy=config.masking.strategy,
         opacity=config.masking.opacity,
+        blur_radius=config.masking.blur_radius,
+        pixelate_blocks=config.masking.pixelate_blocks,
         sensitivity_deg=config.geometry.gaze_tolerance_deg,
         trigger_ms=config.policy.trigger_ms,
         release_ms=config.policy.release_ms,
         camera_index=config.camera.device_index,
+    )
+
+
+def masking_config_from_snapshot(snapshot: UiSnapshot) -> MaskingConfig:
+    """Masking config reflecting the user's CURRENT (runtime) settings.
+
+    The overlay renderer is built from the snapshot — not the startup config —
+    so strategy/parameter edits in the settings window take effect live.
+    """
+    return MaskingConfig(
+        strategy=snapshot.masking_strategy,  # type: ignore[arg-type]
+        opacity=snapshot.opacity,
+        blur_radius=snapshot.blur_radius,
+        pixelate_blocks=snapshot.pixelate_blocks,
     )
 
 
@@ -121,11 +137,22 @@ class CoreController(AppController):
     # thread. Emitted only while the preview is enabled.
     frame_ready = Signal(object)
 
-    def __init__(self, config: AppConfig, model_path: str, parent: QObject | None = None) -> None:
-        """Initialise paused, mirroring ``config``; no hardware touched yet."""
+    def __init__(
+        self,
+        config: AppConfig,
+        model_path: str,
+        parent: QObject | None = None,
+        fade_ms: int = 120,
+    ) -> None:
+        """Initialise paused, mirroring ``config``; no hardware touched yet.
+
+        ``fade_ms`` is the veil->frame crossfade for the overlay; the shell
+        passes 0 when the user prefers reduced motion.
+        """
         super().__init__(snapshot_from_config(config), parent)
         self._config = config
         self._model_path = model_path
+        self._fade_ms = fade_ms
         self._worker: _PipelineWorker | None = None
         self._overlay: object | None = None
 
@@ -167,17 +194,58 @@ class CoreController(AppController):
             self._worker.set_preview(self._snap.preview_enabled)
 
     def _start_worker(self) -> None:  # pragma: no cover - hardware
-        from privacy_guard.overlay import QtOverlayRenderer, qt_available
+        from privacy_guard.overlay import qt_available
 
         self._stop_worker()
         if qt_available() and self._overlay is None:
-            self._overlay = QtOverlayRenderer(opacity=self._config.masking.opacity)
+            self._rebuild_overlay()
         self._worker = _PipelineWorker(self._config, self._model_path, self)
         self._worker.set_preview(self._snap.preview_enabled)
         self._worker.produced.connect(self.apply_frame_result)
         self._worker.frame_produced.connect(self.frame_ready)
         self._worker.failed.connect(self.report_worker_error)
         self._worker.start()
+
+    def _rebuild_overlay(self) -> None:  # pragma: no cover - display
+        """(Re)build the overlay renderer from the CURRENT snapshot settings."""
+        from privacy_guard.overlay import build_qt_masking_renderer, qt_available
+
+        if not qt_available():
+            return
+        was_masked = False
+        if self._overlay is not None:
+            was_masked = bool(self._overlay.is_masked)  # type: ignore[attr-defined]
+            self._overlay.close()  # type: ignore[attr-defined]
+        self._overlay = build_qt_masking_renderer(
+            masking_config_from_snapshot(self._snap), fade_ms=self._fade_ms
+        )
+        if was_masked:
+            self._overlay.set_masked(True)  # type: ignore[attr-defined]
+
+    # ---- masking edits take effect live on the overlay ------------------- #
+    def set_masking_strategy(self, strategy: str) -> None:  # pragma: no cover - display
+        """Change the masking style and rebuild the live overlay accordingly."""
+        super().set_masking_strategy(strategy)
+        if self._overlay is not None:
+            self._rebuild_overlay()
+
+    def set_opacity(self, opacity: float) -> None:  # pragma: no cover - display
+        """Change the veil opacity and rebuild the live overlay accordingly."""
+        super().set_opacity(opacity)
+        if self._overlay is not None:
+            self._rebuild_overlay()
+
+    def set_blur_radius(self, radius: int) -> None:  # pragma: no cover - display
+        """Change the blur radius and rebuild the live overlay accordingly."""
+        super().set_blur_radius(radius)
+        if self._overlay is not None:
+            self._rebuild_overlay()
+
+    def set_pixelate_blocks(self, blocks: int) -> None:  # pragma: no cover - display
+        """Change the pixelation block count and rebuild the live overlay accordingly."""
+        super().set_pixelate_blocks(blocks)
+        if self._overlay is not None:
+            self._rebuild_overlay()
 
     def _stop_worker(self) -> None:  # pragma: no cover - hardware
         if self._worker is not None:

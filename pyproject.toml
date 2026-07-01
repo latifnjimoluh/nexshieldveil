@@ -22,9 +22,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Vision = real face detection. mss (screen capture) is intentionally NOT a
-# dependency yet: the runtime overlay applies an opaque veil and does not capture
-# the screen, so capture-based pixelate/blur are a future evolution (see ROADMAP).
+# Vision = real face detection. Screen capture for blur/pixelate deliberately
+# uses Qt (QScreen.grabWindow, already in the [ui] extra) rather than mss, so
+# the freeze-frame masking path adds no dependency (see ROADMAP_FLOU_PIXELISATION).
 vision = [
     "opencv-python>=4.9,<5",
     "mediapipe>=0.10.9,<0.11",

@@ -58,6 +58,10 @@
   "settings.release.hint": "Always at least the masking delay, to prevent flicker.",
   "settings.opacity": "Veil opacity",
   "settings.masking.style": "Masking style",
+  "settings.blur_radius": "Blur strength",
+  "settings.pixelate_blocks": "Pixelation detail",
+  "settings.pixelate_blocks.hint": "Fewer blocks = coarser, so harder to read.",
+  "settings.masking.capture_note": "Blur and pixelation use a local screen capture, kept in memory only while masking — never saved or sent anywhere.",
   "settings.camera.device": "Camera in use",
   "settings.shortcut": "Toggle shortcut",
   "settings.start_at_login": "Start at login",
@@ -92,6 +96,8 @@
 
   "unit.deg": "{value}°",
   "unit.ms": "{value} ms",
+  "unit.px": "{value} px",
+  "unit.blocks": "{value} blocks",
 
   "about.title": "About & limits",
   "about.version": "Version {version}",
