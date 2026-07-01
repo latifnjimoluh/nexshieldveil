@@ -190,20 +190,40 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
       quelle (Qt seulement, aucun nouvel import).
 
 ### M-FP3 — Compositor (logique pure, le gros des tests)
-- [ ] `overlay/compositor.py` : machine à petits états
-      `IDLE → CAPTURED → VEILED(opaque) → TRANSFORMED(image) → IDLE`.
-- [ ] Règles testées une par une :
-      - le voile opaque est demandé **avant** toute transformation (P1) ;
-      - la capture a lieu **avant** l'affichage du voile (sinon on capture le voile) ;
-      - échec de capture → reste en voile opaque, log warning, pas de crash (P4) ;
-      - stratégie `veil` → pas de capture du tout (comportement v0.2.1 inchangé) ;
-      - levée du masque → les références aux images sont mises à `None` (P2, testé
-        via `weakref`/comptage) ;
-      - re-déclenchement pendant `TRANSFORMED` → PAS de nouvelle capture (l'overlay
-        est visible, on garderait le voile) ;
-      - transformation qui arrive APRÈS la levée (course) → jetée, pas affichée.
-- [ ] Worker de transformation : `QThread`/`QRunnable` + signal résultat ; version
-      synchrone injectable pour les tests déterministes.
+- [x] `overlay/compositor.py` : machine à états `IDLE → VEILED(opaque) →
+      TRANSFORMED(image) → IDLE` (99 % couvert). *Écart assumé vs le plan :
+      `CAPTURED` n'est pas un état persistant — la capture est une étape
+      synchrone transitoire à l'intérieur de `engage()`, ce qui supprime tout
+      état intermédiaire observable où l'écran serait capturé mais pas voilé.*
+      Collaborateurs injectés : `ScreenGrabber` + `MaskPresenter` (Protocol) +
+      `TransformExecutor` (Protocol) — Protocols et non ABC car les impléms Qt
+      héritent de QObject, dont la métaclasse est incompatible avec ABCMeta.
+      `RecordingPresenter` fourni comme doublure officielle (même patron que
+      `RecordingRenderer`).
+- [x] Règles testées une par une (16 tests unitaires, un par règle) :
+      - le voile opaque est demandé **avant** toute transformation (P1) — testé
+        aussi avec un executor manuel : voile visible pendant que la
+        transformation est en vol ;
+      - la capture a lieu **avant** l'affichage du voile (journal d'ordre
+        `["grab", "veil", ...]`) ;
+      - échec de capture → reste en voile opaque, warning, pas de crash (P4) ;
+      - capture entièrement « blanche » (écran verrouillé/DRM) → voile (P4) ;
+        écrans blancs partiels → écartés, les écrans réels sont transformés ;
+      - échec de la transformation (exception stratégie ou résultat vide) →
+        voile conservé, jamais d'exception (P4) ;
+      - stratégie voile (`strategy=None`) → aucune capture, jamais (v0.2.1) ;
+      - levée du masque → plus AUCUNE référence de frame vivante (P2, testé via
+        `weakref` + `gc` sur la capture ET la frame transformée) ;
+      - re-déclenchement pendant `VEILED`/`TRANSFORMED` → pas de nouvelle
+        capture (P3, compteur du fake) ;
+      - transformation arrivant après la levée, ou d'un engagement précédent
+        (générations) → jetée, pas affichée.
+- [x] Executor de transformation : `QtTransformExecutor` (`QThreadPool` +
+      `QRunnable`, résultat livré sur le thread propriétaire via signal queued —
+      P7) dans `overlay/qt_executor.py`, **testé offscreen en CI** (preuve que le
+      travail part hors du thread appelant et que le callback revient dessus) ;
+      `SynchronousTransformExecutor` + `ManualTransformExecutor` (files/courses)
+      pour les tests déterministes ; `transform_shots` pur (géométrie préservée).
 
 ### M-FP4 — Overlay : affichage d'image + multi-moniteur
 - [ ] `_OverlayWidget` : nouveau mode « image » (peint une QImage plein écran) en plus
