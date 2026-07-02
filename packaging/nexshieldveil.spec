@@ -69,6 +69,12 @@ hiddenimports += [
     "privacy_guard.vision.mediapipe_detector",
     "privacy_guard.capture.opencv_sources",
     "privacy_guard.overlay.qt_overlay",
+    # Freeze-frame masking stack (v0.3.0): capture + compositor + off-thread
+    # transform. Imported lazily inside CoreController/_rebuild_overlay.
+    "privacy_guard.overlay.grabber",
+    "privacy_guard.overlay.qt_grabber",
+    "privacy_guard.overlay.compositor",
+    "privacy_guard.overlay.qt_executor",
 ]
 
 # MediaPipe's collect_all drags in its optional GenAI/LLM stack (torch ~250 MB,

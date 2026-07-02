@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "privacy-guard"
-version = "0.2.1"
+version = "0.3.0"
 description = "Anti shoulder-surfing screen privacy guard (webcam observer detection + auto masking)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -111,6 +111,10 @@ module = [
     "privacy_guard.tracking.*",
     "privacy_guard.policy.*",
     "privacy_guard.masking.*",
+    # Pure (Qt-free) overlay logic: same strictness as the core (M-FP7).
+    "privacy_guard.overlay.renderer",
+    "privacy_guard.overlay.grabber",
+    "privacy_guard.overlay.compositor",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

@@ -37,10 +37,10 @@ interfaces, so every decision path is exercised headless in CI.
 | `geometry` | pure | Gaze vectors, ray/plane intersection, screen targeting, primary-user pick | no |
 | `tracking` | pure | EMA / 1D Kalman smoothing | no |
 | `policy` | pure | Hysteresis state machine (anti-flicker) | no |
-| `masking` | pure | Image transforms: veil / pixelate / blur (only **veil** is wired to the live overlay; pixelate/blur await a capture path) | no |
+| `masking` | pure | Image transforms: veil / pixelate / blur — all three live on the overlay since v0.3.0 (screen-size perf budgets tested) | no |
 | `capture` | adapter | `FrameSource`: webcam / video file / **synthetic** | webcam optional |
 | `vision` | adapter | `FaceDetector`: MediaPipe wrapper / **scripted** | MediaPipe optional |
-| `overlay` | adapter | `Renderer`: Qt overlay / **recording** | display optional |
+| `overlay` | mixed | Pure: `Renderer`/**recording**, `ScreenGrabber`/**fake**, freeze-frame `FreezeFrameCompositor` + `CompositorRenderer`, **recording presenter**. Qt adapters: per-screen presenter, `QScreen` grabber, thread-pool transform executor | display optional |
 | `app` | wiring | `PrivacyGuardPipeline` orchestration + CLI | no (interfaces) |
 
 The **bold** implementations are the headless test doubles that let the real
@@ -56,7 +56,18 @@ geometry/policy/masking code run with no camera or display.
   `solvePnP` head-pose estimation when MediaPipe/OpenCV and a model are present.
 - **`Renderer`** — `set_masked(bool)`, `is_masked`. `RecordingRenderer` records
   transitions (test double + observable hook); `QtOverlayRenderer` shows the real
-  transparent, always-on-top, click-through window.
+  transparent, always-on-top, click-through veil on every screen;
+  `CompositorRenderer` drives the freeze-frame stack below.
+- **Freeze-frame masking (blur/pixelate)** — the pure
+  `FreezeFrameCompositor` orchestrates one engagement: `ScreenGrabber.grab_all()`
+  FIRST (one still per screen — grabbing later would photograph our own veil),
+  opaque veil shown immediately, transform off-thread via a `TransformExecutor`,
+  then the veil is swapped for the transformed frames; lifting drops every frame
+  reference. Test doubles exist for all three seams (`FakeScreenGrabber`,
+  `RecordingPresenter`, synchronous/manual executors), so every rule — ordering,
+  blank-capture fallback, races, memory release — is unit-tested headlessly; the
+  Qt adapters (`QtScreenGrabber`, `QtMaskPresenter`, `QtTransformExecutor`) are
+  exercised offscreen. See `docs/ROADMAP_FLOU_PIXELISATION.md`.
 
 ## The decision state machine
 
@@ -125,9 +136,8 @@ logged warning and a working (if limited) app rather than a crash.
 
 - **Approach B** — gaze-contingent foveal rendering.
 - **Approach C** — temporal psychovisual modulation with synchronized glasses.
-- Capture-based masking (screen grab → pixelate/blur the captured pixels). The
-  `masking` strategies already implement these transforms; only the screen-capture
-  + live wiring remains. The current overlay applies an opaque veil.
 
-These require additional hardware and/or rendering pipelines and are deliberately
-not implemented; see `docs/ROADMAP.md`.
+(Capture-based masking — screen grab → pixelate/blur — shipped in v0.3.0 as the
+freeze-frame path described above.) The remaining approaches require additional
+hardware and/or rendering pipelines and are deliberately not implemented; see
+`docs/ROADMAP.md`.

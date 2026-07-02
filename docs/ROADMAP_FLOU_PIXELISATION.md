@@ -308,15 +308,23 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
       testé côté VM ; parité i18n couverte par les tests existants.
 
 ### M-FP7 — Qualité, docs, release
-- [ ] Gates complets : ruff, ruff format, mypy (étendre le périmètre strict à
-      `overlay/compositor.py` et `overlay/grabber.py` — logique pure), bandit,
-      pip-audit, pytest complet + privacy + performance.
-- [ ] Couverture : `compositor.py`/`grabber.py` ≥ 90 % ; `qt_grabber.py` et le rendu
-      dans l'`omit` (même règle que `qt_overlay.py`).
-- [ ] `docs/ARCHITECTURE.md` + `docs/ROADMAP.md` (§ M7 note honnête) mis à jour.
-- [ ] Version `0.3.0` (fonctionnalité visible) : `__init__.py`, `pyproject.toml`,
-      `installer.iss` ; build PyInstaller + installeur Inno ; vérification `--check`
-      + lancement réel ; release GitHub v0.3.0.
+- [x] Gates complets : ruff, ruff format, mypy étendu (périmètre strict +
+      `overlay/renderer.py`, `overlay/grabber.py`, `overlay/compositor.py` —
+      zéro correction nécessaire ; CI et pre-commit alignés), bandit, pip-audit
+      (CI), pytest complet (374) + privacy (15) + performance (9).
+- [x] Couverture : `compositor.py` 99 %, `grabber.py` 100 %, `renderer.py`
+      100 % ; seuls les adaptateurs Qt (`qt_overlay.py`, `qt_grabber.py`)
+      restent dans l'`omit`.
+- [x] `docs/ARCHITECTURE.md` (module overlay « mixed », seam freeze-frame,
+      évolution livrée) + `docs/ROADMAP.md` (note M7 : évolution livrée en
+      v0.3.0) mis à jour.
+- [x] Version `0.3.0` : `__init__.py`, `pyproject.toml`, `installer.iss`, spec
+      PyInstaller (hiddenimports de la pile freeze-frame) ; build PyInstaller +
+      installeur Inno ; vérification `--check` + lancement réel ; release
+      GitHub v0.3.0.
+
+**Chantier terminé** : les 8 jalons (M-FP0 → M-FP7) sont livrés ; le flou et la
+pixelisation sont en production dans la v0.3.0.
 
 ---
 

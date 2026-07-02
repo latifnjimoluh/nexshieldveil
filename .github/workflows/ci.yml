@@ -52,8 +52,8 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
-      - name: Mypy (core modules)
-        run: mypy src/privacy_guard/config src/privacy_guard/geometry src/privacy_guard/tracking src/privacy_guard/policy src/privacy_guard/masking
+      - name: Mypy (core modules + pure overlay logic)
+        run: mypy src/privacy_guard/config src/privacy_guard/geometry src/privacy_guard/tracking src/privacy_guard/policy src/privacy_guard/masking src/privacy_guard/overlay/renderer.py src/privacy_guard/overlay/grabber.py src/privacy_guard/overlay/compositor.py
 
       - name: Bandit (security lint)
         run: bandit -r src -ll
