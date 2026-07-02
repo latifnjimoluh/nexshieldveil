@@ -113,6 +113,16 @@ Item {
                         onClicked: settingsVM.set_masking_strategy(modelData.id)
                     }
                 }
+                Text {
+                    // Honest consent note: capture-based styles grab the screen locally.
+                    visible: settingsVM.masking_strategy !== "veil"
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: Tr.t("settings.masking.capture_note")
+                    color: Theme.inkSoft
+                    font.family: Theme.fontUi
+                    font.pixelSize: Theme.fontSize("caption")
+                }
                 CheckBox {
                     objectName: "startAtLogin"
                     text: Tr.t("onboarding.step3.startup")

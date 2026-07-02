@@ -56,6 +56,29 @@ build by two complementary layers in `tests/privacy/`:
    model at runtime. (The optional updater fetches an *installer*, never a model, and
    only on your click — see exception above.)
 
+## Screen capture at masking time (blur / pixelate)
+
+Since v0.3.0 the `blur` and `pixelate` masking styles work on real screen
+content, which requires capturing the screen. Because a screen frame is even
+more sensitive than a camera frame (it contains the very content being
+protected), this path follows stricter rules:
+
+- **When:** exactly one still capture per screen, taken at the instant masking
+  engages — **never a continuous stream**, never "in the background just in
+  case". The `veil` style never captures anything, ever.
+- **What:** the raw frame goes straight into process memory (via Qt's
+  `QScreen.grabWindow`; no extra dependency), is transformed off-thread, and the
+  transformed copy is displayed in the overlay. It is shown nowhere else.
+- **Lifetime:** both the captured and the transformed frames live in RAM only
+  and every reference is dropped the moment the mask lifts.
+- *Enforced by:* `tests/privacy/test_screen_capture_privacy.py` —
+  `test_no_screen_frame_survives_the_mask_lift` and the 30-cycle accumulation
+  test hold `weakref`s to every captured/transformed frame and assert they are
+  collected after each lift; one-grab-per-engagement is asserted on the same
+  path; the network/disk monkeypatch tests also run over the capture path; and
+  the static AST guard covers the capture modules like all the rest (no new
+  exception was added for them).
+
 ## Third-party libraries (honest caveat)
 
 The guarantees above cover **our** code. A bundled third-party library can have its
@@ -72,6 +95,8 @@ network.
 - No frame, landmark, or biometric data ever leaves your machine.
 - The only first-party network use is the **optional, disableable** update check.
 - The camera buffer is transient: process, decide, discard.
+- The screen capture (blur/pixelate only) is equally transient: one frame at
+  masking time, RAM only, released on lift.
 
 ## Scope reminder
 

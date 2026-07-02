@@ -320,6 +320,16 @@ def test_about_version_and_limits(env) -> None:
     assert all(isinstance(item, str) and item for item in limits)
 
 
+def test_about_states_the_screen_capture_honestly(env) -> None:
+    # M-FP6: the About screen must disclose the freeze-frame capture in plain
+    # words — local, memory-only, released on lift.
+    _, tr = env
+    vm = AboutViewModel(tr)
+    text = vm.property("capture_text")
+    assert "capture" in text.lower()
+    assert "mémoire" in text  # env fixture is fr
+
+
 def test_about_tagline_translates(env) -> None:
     _, tr = env
     vm = AboutViewModel(tr)

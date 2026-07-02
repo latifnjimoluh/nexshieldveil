@@ -103,6 +103,7 @@
   "about.version": "Version {version}",
   "about.tagline": "Reduces the risk of shoulder surfing, it does not remove it.",
   "about.local": "Everything is processed locally, in memory. No image is saved or sent.",
+  "about.capture": "With blur or pixelation, a local screen capture is taken at masking time, kept in memory only and released as soon as the mask lifts.",
   "about.limits.title": "What NexShieldVeil does not protect against",
   "about.limits.1": "A camera or phone filming your screen.",
   "about.limits.2": "An onlooker outside the webcam's view.",

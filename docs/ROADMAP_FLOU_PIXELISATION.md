@@ -278,21 +278,34 @@ Les impléms actuelles sont correctes mais pas calibrées pour du 1080p/4K :
       parité vérifiée par les tests existants.
 
 ### M-FP6 — Confidentialité (extension des garanties, pas juste « pas de régression »)
-- [ ] `tests/privacy/` : nouveaux tests dédiés à la frame d'écran :
-      - aucun appel réseau pendant capture/transformation (fixtures existantes) ;
-      - aucune écriture disque (le monkeypatch `np.save`/`imwrite`/`open(w)` couvre
-        déjà, ajouter le chemin capture au périmètre exercé) ;
-      - après `set_masked(False)`, plus AUCUNE référence vivante à la capture
-        (test `weakref` sur le compositor) ;
-      - pas d'accumulation : N cycles masquage/levée → mémoire stable.
-- [ ] Garde AST : vérifier que `qt_grabber.py` passe la garde telle quelle (il le
-      devrait : Qt seulement) ; ne PAS ajouter d'exception à la garde.
-- [ ] `docs/PRIVACY.md` : nouvelle section « Capture d'écran au masquage » — quand,
-      quoi, où ça vit, quand c'est libéré. `docs/LIMITATIONS.md` : l'image affichée
-      est figée ; un flou reste une réduction de lisibilité, pas un chiffrement
-      (un flou faible sur du texte très gros peut rester devinable → recommander les
-      valeurs par défaut ou plus fortes).
-- [ ] Onboarding/À propos : une phrase honnête sur la capture locale (P5).
+- [x] `tests/privacy/test_screen_capture_privacy.py` (6 tests, sans Qt — la
+      suite privacy tourne même sur un checkout core-only) :
+      - aucun appel réseau sur le chemin capture→transformation→présentation
+        (monkeypatch socket, 5 cycles) ;
+      - aucune écriture disque (spy `open(w)` + interdiction `np.save`/`savez`)
+        et aucun fichier image n'apparaît (CWD vide) ;
+      - P2 : plus AUCUNE référence vivante à la capture NI à la frame
+        transformée après la levée (`weakref` + `gc`, grabber ET presenter
+        traceurs) ; le compositor ne détient aucun ndarray même PENDANT le
+        masquage ;
+      - P3 : exactement une capture par engagement, et 30 cycles
+        masquage/levée sans aucune accumulation.
+      *Le côté Qt de la même garantie (copie possédée de la QImage, frames
+      lâchées sur hide) est prouvé offscreen dans `test_qt_presenter.py`.*
+- [x] Garde AST : `qt_grabber.py`/`compositor.py`/`qt_executor.py` passent la
+      garde telle quelle (Qt/numpy seulement) — AUCUNE exception ajoutée.
+- [x] `docs/PRIVACY.md` : section « Screen capture at masking time » (quand :
+      une capture à l'engagement, jamais de flux ; quoi : RAM only via
+      `QScreen.grabWindow`, zéro dépendance ; libération à la levée ; tests
+      nommés) + puce « en pratique ». `docs/LIMITATIONS.md` : section
+      « Blur / pixelate specifics » — image figée (et pourquoi c'est un plus :
+      une notification arrivant pendant le masquage reste couverte), flou ≠
+      chiffrement (texte très gros + flou faible = devinable → garder les
+      défauts ou plus fort), écran verrouillé/DRM/Wayland → repli voile opaque.
+- [x] Onboarding : note de consentement honnête sous le choix du style (visible
+      dès qu'un style à capture est sélectionné). À propos : paragraphe
+      `about.capture` FR/EN (locale, mémoire seule, libérée à la levée) —
+      testé côté VM ; parité i18n couverte par les tests existants.
 
 ### M-FP7 — Qualité, docs, release
 - [ ] Gates complets : ruff, ruff format, mypy (étendre le périmètre strict à

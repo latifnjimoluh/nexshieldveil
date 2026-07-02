@@ -39,6 +39,9 @@ class AboutViewModel(QObject):
     def _get_local_text(self) -> str:
         return self._tr.tr_key("about.local")
 
+    def _get_capture_text(self) -> str:
+        return self._tr.tr_key("about.capture")
+
     def _get_license_text(self) -> str:
         return self._tr.tr_key("about.license")
 
@@ -52,6 +55,7 @@ class AboutViewModel(QObject):
     version = Property(str, _get_version, notify=changed)
     tagline = Property(str, _get_tagline, notify=changed)
     local_text = Property(str, _get_local_text, notify=changed)
+    capture_text = Property(str, _get_capture_text, notify=changed)
     license_text = Property(str, _get_license_text, notify=changed)
     limits_title = Property(str, _get_limits_title, notify=changed)
     limits = Property("QVariantList", _get_limits, notify=changed)

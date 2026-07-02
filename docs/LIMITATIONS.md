@@ -27,6 +27,20 @@ and hide the content.** This implies the limits below.
 | 7 | **A disabled or absent camera** | With no camera (or the `vision` extra/model missing) the app runs in degraded mode and **never masks**. |
 | 8 | **Off-screen leakage** | It protects the screen content only — not what you say, type audibly, or print. |
 
+## Blur / pixelate specifics (freeze-frame masking)
+
+- **The masked image is frozen.** Blur/pixelate transform *one* capture taken at
+  masking time; the screen underneath keeps living but stays hidden behind that
+  frozen picture. A notification arriving *while* masked is therefore covered
+  (a privacy plus), but what you see under the mask is a snapshot, not live blur.
+- **Blur reduces readability; it is not encryption.** A weak blur over very
+  large text (a headline, a huge font) can remain guessable. Keep the default
+  strength or raise it; when in doubt, the opaque veil hides the most.
+- **Some situations yield nothing to blur.** A locked screen, DRM-protected
+  content, or an OS refusing capture (e.g. Wayland without a portal) produces a
+  blank or failed capture — the app then falls back to the **opaque veil**, so
+  protection never silently drops to "nothing".
+
 ## Accuracy caveats
 
 - Webcam gaze estimation typically carries **1.5–3° of error**; we do **not** claim

@@ -103,6 +103,7 @@
   "about.version": "Version {version}",
   "about.tagline": "Réduit le risque de regard indiscret, sans le supprimer.",
   "about.local": "Tout est traité localement, en mémoire vive. Aucune image n'est enregistrée ni envoyée.",
+  "about.capture": "Avec le flou ou la pixelisation, une capture locale de l'écran est prise au moment du masquage, gardée en mémoire uniquement et libérée dès la levée du masque.",
   "about.limits.title": "Ce que NexShieldVeil ne protège pas",
   "about.limits.1": "Une caméra ou un téléphone qui filme ton écran.",
   "about.limits.2": "Un curieux hors du champ de la webcam.",

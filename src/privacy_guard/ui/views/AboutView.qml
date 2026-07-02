@@ -50,6 +50,14 @@ Item {
                     font.family: Theme.fontUi
                     font.pixelSize: Theme.fontSize("body")
                 }
+                Text {
+                    width: parent.width
+                    text: aboutVM.capture_text
+                    wrapMode: Text.WordWrap
+                    color: Theme.inkSoft
+                    font.family: Theme.fontUi
+                    font.pixelSize: Theme.fontSize("body")
+                }
 
                 Rectangle { width: parent.width; height: 1; color: Theme.line }
 
