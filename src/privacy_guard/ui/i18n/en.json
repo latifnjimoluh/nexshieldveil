@@ -18,6 +18,8 @@
   "error.no_camera.action": "Try again",
   "error.disconnected.detail": "The camera was disconnected. Watching is paused.",
   "error.disconnected.action": "Try again",
+  "error.reconnecting.detail": "Camera lost (system sleep or unplugged). Reconnecting automatically…",
+  "error.reconnecting.action": "Retry now",
   "error.permission_denied.detail": "NexShieldVeil cannot access the camera. Allow it in your system settings.",
   "error.permission_denied.action": "Open system settings",
   "error.model_unavailable.detail": "The detection model is missing. Watching cannot see any face.",

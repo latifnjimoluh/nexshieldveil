@@ -148,6 +148,17 @@ avec temporisation (déclenchement après N ms de regard détecté, levée aprè
 - [x] `README` (install + exécution), `ARCHITECTURE`, `PRIVACY`, `LIMITATIONS`.
 - [x] Récapitulatif final : capacités réelles, limites, prérequis évolutions B/C.
 
+### Chantier fiabilité v0.3.1 (retours bêta-testeur)
+- [x] **M-R1 — Résilience caméra.** Après une mise en veille ou un débranchement, la
+      boucle de surveillance mourait sur le premier échec de lecture et l'app tournait
+      sans plus rien protéger. `ResilientFrameSource` (`capture/resilience.py`, logique
+      pure 100 % testée) tolère les ratés transitoires puis ferme/rouvre la caméra en
+      backoff plafonné, sans fin, en renumérotant frames et timestamps (MediaPipe exige
+      des timestamps strictement croissants). La perte est visible (état « reconnexion
+      automatique » + action « Réessayer maintenant »), jamais silencieuse.
+- [ ] **M-R2 — Persistance des réglages** (TOML utilisateur `%APPDATA%`, relu au démarrage).
+- [ ] **M-R3 (optionnel) — Pause temporisée** (snooze 5/15 min depuis le tray).
+
 ---
 
 ## 5. Hypothèses prises (à défaut de blocage)

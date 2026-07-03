@@ -36,7 +36,7 @@ repos:
         entry: mypy
         language: system
         types: [python]
-        files: ^src/privacy_guard/((config|geometry|tracking|policy|masking)/|overlay/(renderer|grabber|compositor)\.py)
+        files: ^src/privacy_guard/((config|geometry|tracking|policy|masking)/|overlay/(renderer|grabber|compositor)\.py|capture/resilience\.py)
         pass_filenames: false
         args:
           - src/privacy_guard/config
@@ -47,3 +47,4 @@ repos:
           - src/privacy_guard/overlay/renderer.py
           - src/privacy_guard/overlay/grabber.py
           - src/privacy_guard/overlay/compositor.py
+          - src/privacy_guard/capture/resilience.py

@@ -39,6 +39,9 @@ class CameraError(Enum):
 
     NO_CAMERA = "no_camera"
     DISCONNECTED = "disconnected"
+    # The camera was lost (suspend/unplug) and the worker is reopening it by
+    # itself; the user can wait — or hit the action to retry immediately.
+    RECONNECTING = "reconnecting"
     PERMISSION_DENIED = "permission_denied"
     MODEL_UNAVAILABLE = "model_unavailable"
 
@@ -156,6 +159,7 @@ def primary_action_id(snapshot: UiSnapshot) -> str:
         return {
             CameraError.NO_CAMERA: "retry",
             CameraError.DISCONNECTED: "retry",
+            CameraError.RECONNECTING: "retry",
             CameraError.PERMISSION_DENIED: "open_system_settings",
             CameraError.MODEL_UNAVAILABLE: "open_docs",
         }[snapshot.error_kind]

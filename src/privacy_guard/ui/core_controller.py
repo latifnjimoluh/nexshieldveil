@@ -84,11 +84,20 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
         )
         self.frame_produced.emit(qimg)
 
+    def _on_source_health(self, health: object) -> None:
+        # Called from this worker thread by the resilient source. Only the loss is
+        # reported: the next successful frame clears the banner by itself
+        # (apply_frame_result resets error_kind on every produced result).
+        from privacy_guard.capture import SourceHealth
+
+        if health is SourceHealth.RECONNECTING:
+            self.failed.emit(CameraError.RECONNECTING.value)
+
     def run(self) -> None:
         from pathlib import Path
 
         from privacy_guard.app import PrivacyGuardPipeline
-        from privacy_guard.capture import WebcamFrameSource
+        from privacy_guard.capture import ResilientFrameSource, WebcamFrameSource
         from privacy_guard.overlay import RecordingRenderer
         from privacy_guard.vision import MediaPipeFaceDetector, mediapipe_available
 
@@ -96,8 +105,8 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
             self.failed.emit(CameraError.MODEL_UNAVAILABLE.value)
             return
         try:
-            source = WebcamFrameSource(self._config.camera.device_index)
-            if not source.is_available:
+            webcam = WebcamFrameSource(self._config.camera.device_index)
+            if not webcam.is_available:
                 self.failed.emit(CameraError.NO_CAMERA.value)
                 return
             detector = MediaPipeFaceDetector(
@@ -109,6 +118,16 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
             logger.warning("Capture/detector init failed: %s", exc)
             self.failed.emit(CameraError.NO_CAMERA.value)
             return
+
+        # Survive suspend/resume and unplugs: failed reads trigger an automatic
+        # close/reopen with backoff instead of killing this loop (M-R1). The
+        # wrapper polls our stop flag, so pausing/quitting stays responsive.
+        source = ResilientFrameSource(
+            webcam,
+            reopen=lambda: WebcamFrameSource(self._config.camera.device_index),
+            should_abort=lambda: self._stop,
+            on_health=self._on_source_health,
+        )
 
         # The worker decides; the UI thread paints the overlay from the emitted result.
         # The optional detail hook builds the preview frame only when preview is on.
@@ -123,7 +142,10 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
         try:
             while not self._stop:
                 if pipeline.step() is None:
-                    self.failed.emit(CameraError.DISCONNECTED.value)
+                    # With the resilient source this only happens on stop/close;
+                    # the guard keeps a real exhaustion visible rather than silent.
+                    if not self._stop:
+                        self.failed.emit(CameraError.DISCONNECTED.value)
                     break
                 self.msleep(int(1000 / max(1, self._config.camera.target_fps)))
         finally:

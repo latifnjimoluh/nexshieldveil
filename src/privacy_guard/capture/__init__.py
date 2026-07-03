@@ -8,10 +8,18 @@ from privacy_guard.capture.opencv_sources import (
     WebcamFrameSource,
     opencv_available,
 )
+from privacy_guard.capture.resilience import (
+    ReconnectPolicy,
+    ResilientFrameSource,
+    SourceHealth,
+)
 
 __all__ = [
     "Frame",
     "FrameSource",
+    "ReconnectPolicy",
+    "ResilientFrameSource",
+    "SourceHealth",
     "SyntheticFrameSource",
     "VideoFileFrameSource",
     "WebcamFrameSource",

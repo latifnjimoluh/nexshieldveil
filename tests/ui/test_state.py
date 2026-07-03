@@ -129,6 +129,10 @@ def test_primary_action_id_per_state() -> None:
     assert primary_action_id(UiSnapshot(running=False)) == "resume"
     assert primary_action_id(UiSnapshot(running=True)) == "pause"
     assert primary_action_id(UiSnapshot(running=True, error_kind=CameraError.NO_CAMERA)) == "retry"
+    # While auto-reconnecting, the offered action is an immediate manual retry.
+    assert (
+        primary_action_id(UiSnapshot(running=True, error_kind=CameraError.RECONNECTING)) == "retry"
+    )
     assert (
         primary_action_id(UiSnapshot(running=True, error_kind=CameraError.PERMISSION_DENIED))
         == "open_system_settings"
@@ -161,6 +165,7 @@ def test_camera_error_enum_is_exhaustive() -> None:
     assert {e.name for e in CameraError} == {
         "NO_CAMERA",
         "DISCONNECTED",
+        "RECONNECTING",
         "PERMISSION_DENIED",
         "MODEL_UNAVAILABLE",
     }

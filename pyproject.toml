@@ -115,6 +115,8 @@ module = [
     "privacy_guard.overlay.renderer",
     "privacy_guard.overlay.grabber",
     "privacy_guard.overlay.compositor",
+    # Pure camera-reconnection logic (M-R1).
+    "privacy_guard.capture.resilience",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

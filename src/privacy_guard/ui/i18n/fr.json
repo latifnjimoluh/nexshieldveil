@@ -18,6 +18,8 @@
   "error.no_camera.action": "Réessayer",
   "error.disconnected.detail": "La caméra a été déconnectée. La surveillance est en pause.",
   "error.disconnected.action": "Réessayer",
+  "error.reconnecting.detail": "Caméra perdue (mise en veille ou débranchement). Reconnexion automatique en cours…",
+  "error.reconnecting.action": "Réessayer maintenant",
   "error.permission_denied.detail": "NexShieldVeil n'a pas accès à la caméra. Autorise-le dans les réglages système.",
   "error.permission_denied.action": "Ouvrir les réglages système",
   "error.model_unavailable.detail": "Le modèle de détection est introuvable. La surveillance ne peut pas voir de visage.",
