@@ -18,13 +18,15 @@ hardware. Subclasses override the command slots to *also* act on the core, calli
 from __future__ import annotations
 
 import dataclasses
+import time
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from privacy_guard.ui.state import (
     BLUR_RADIUS_RANGE,
     PIXELATE_BLOCKS_RANGE,
     SENSITIVITY_DEG_RANGE,
+    SNOOZE_MINUTES_RANGE,
     CameraError,
     UiSnapshot,
 )
@@ -42,6 +44,7 @@ class AppController(QObject):
     running_changed = Signal()
     config_changed = Signal()
     preview_changed = Signal()
+    snooze_changed = Signal()
     # Intent signals the app shell connects (open the settings window, quit, …).
     settings_requested = Signal()
     about_requested = Signal()
@@ -52,6 +55,10 @@ class AppController(QObject):
         """Initialise with an optional starting snapshot (defaults to paused)."""
         super().__init__(parent)
         self._snap = snapshot or UiSnapshot()
+        # Timed pause (M-R3): fires once to resume watching automatically.
+        self._snooze_timer = QTimer(self)
+        self._snooze_timer.setSingleShot(True)
+        self._snooze_timer.timeout.connect(self._on_snooze_elapsed)
 
     # ------------------------------------------------------------------ #
     # snapshot plumbing
@@ -78,6 +85,8 @@ class AppController(QObject):
             self.running_changed.emit()
         if old.preview_enabled != new.preview_enabled:
             self.preview_changed.emit()
+        if old.snoozed_until_ms != new.snoozed_until_ms:
+            self.snooze_changed.emit()
         config_fields = (
             "masking_strategy",
             "opacity",
@@ -169,13 +178,25 @@ class AppController(QObject):
     # ------------------------------------------------------------------ #
     @Slot()
     def enable(self) -> None:
-        """Start (resume) watching. Clears any pause; errors are re-derived by the core."""
-        self._update(running=True)
+        """Start (resume) watching. Clears any pause/snooze; errors re-derive live."""
+        self._snooze_timer.stop()
+        self._update(running=True, snoozed_until_ms=None)
 
     @Slot()
     def pause(self) -> None:
-        """Pause watching and release the camera (no camera => no preview, no error)."""
-        self._update(running=False, camera_active=False, error_kind=None, preview_enabled=False)
+        """Pause watching (until further notice) and release the camera.
+
+        An explicit pause always cancels a pending snooze: the user asked for
+        'until I say so', not 'for a few minutes'.
+        """
+        self._snooze_timer.stop()
+        self._update(
+            running=False,
+            camera_active=False,
+            error_kind=None,
+            preview_enabled=False,
+            snoozed_until_ms=None,
+        )
 
     @Slot()
     def toggle(self) -> None:
@@ -184,6 +205,26 @@ class AppController(QObject):
             self.pause()
         else:
             self.enable()
+
+    @Slot(int)
+    def snooze(self, minutes: int) -> None:
+        """Pause temporarily (M-R3): watching resumes by itself after ``minutes``.
+
+        Goes through :meth:`pause` first, so subclasses release the camera and
+        lift the overlay exactly as for a manual pause; then the resume timer
+        is armed. Snoozing again simply rearms with the new duration.
+        """
+        lo, hi = SNOOZE_MINUTES_RANGE
+        minutes = min(hi, max(lo, int(minutes)))
+        self.pause()
+        self._update(snoozed_until_ms=time.monotonic() * 1000.0 + minutes * 60_000.0)
+        self._snooze_timer.start(minutes * 60_000)
+
+    def _on_snooze_elapsed(self) -> None:
+        """Auto-resume at the end of a snooze (no-op if the user acted meanwhile)."""
+        if self._snap.snoozed_until_ms is None or self._snap.running:
+            return
+        self.enable()
 
     @Slot(str)
     def set_masking_strategy(self, strategy: str) -> None:

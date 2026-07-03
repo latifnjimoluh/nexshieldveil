@@ -174,6 +174,24 @@ def test_tray_menu_labels(env) -> None:
     assert vm.property("camera_label") == "Caméra active"
 
 
+def test_tray_snooze_labels_carry_the_durations(env) -> None:
+    ctrl, tr = env
+    vm = TrayViewModel(ctrl, tr)
+    assert vm.property("snooze_short_label") == "Pause pendant 5 min"
+    assert vm.property("snooze_long_label") == "Pause pendant 15 min"
+    tr.language = "en"
+    assert vm.property("snooze_short_label") == "Pause for 5 min"
+
+
+def test_tray_snooze_commands_pause_with_auto_resume_armed(env) -> None:
+    ctrl, tr = env
+    ctrl.enable()
+    vm = TrayViewModel(ctrl, tr)
+    vm.snooze_short()
+    assert ctrl.property("running") is False
+    assert ctrl.snapshot.snoozed_until_ms is not None
+
+
 # --------------------------------------------------------------------------- #
 # SettingsViewModel
 # --------------------------------------------------------------------------- #

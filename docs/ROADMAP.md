@@ -166,7 +166,12 @@ avec temporisation (déclenchement après N ms de regard détecté, levée aprè
       fusionnée du snapshot (`app_config_from_snapshot`), et les seuils de
       détection redémarrent le worker avec debounce. Bonus corrigé : flou et
       pixelisation n'émettaient jamais `config_changed`.
-- [ ] **M-R3 (optionnel) — Pause temporisée** (snooze 5/15 min depuis le tray).
+- [x] **M-R3 — Pause temporisée.** Deux entrées tray « Pause pendant 5/15 min » :
+      la surveillance se coupe (caméra relâchée, comme une pause) puis reprend
+      toute seule — pour les moments en famille où une pause permanente finirait
+      oubliée. Reprendre/Pause manuels annulent le minuteur ; re-snoozer réarme ;
+      l'état affiché distingue honnêtement « pause temporaire (reprise auto) »
+      de « pause jusqu'à nouvel ordre ». Jamais persisté (état de session).
 
 ---
 

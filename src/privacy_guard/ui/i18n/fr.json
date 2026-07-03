@@ -9,6 +9,7 @@
   "status.clear.detail": "Surveillance active. Personne d'autre ne regarde.",
   "status.clear.engaging": "Observateur repéré…",
   "status.paused.detail": "Surveillance en pause. Ton écran n'est pas surveillé.",
+  "status.snoozed.detail": "Pause temporaire : la surveillance reprendra toute seule. En attendant, ton écran n'est pas surveillé.",
 
   "camera.active": "Caméra active",
   "camera.inactive": "Caméra inactive",
@@ -27,6 +28,7 @@
 
   "action.pause": "Mettre en pause",
   "action.resume": "Reprendre la surveillance",
+  "action.snooze": "Pause pendant {minutes} min",
   "action.settings": "Réglages…",
   "action.about": "À propos & limites",
   "action.quit": "Quitter",

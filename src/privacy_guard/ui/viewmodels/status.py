@@ -37,6 +37,9 @@ class StatusViewModel(QObject):
             controller.faces_count_changed,
             controller.engaging_changed,
             controller.running_changed,
+            # A snooze can start from an already-paused state (same logical
+            # ProtectionState) yet the detail copy changes — refresh on it too.
+            controller.snooze_changed,
             translator.language_changed,
         ):
             signal.connect(self.changed)

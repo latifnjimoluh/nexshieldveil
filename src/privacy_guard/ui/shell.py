@@ -204,6 +204,12 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     menu = QMenu()
     act_toggle = menu.addAction(tray_vm.property("toggle_label"))
     act_toggle.triggered.connect(controller.toggle)
+    # Timed pause (M-R3): watching resumes by itself — for the kid-on-the-lap
+    # moments where a permanent pause would end up forgotten.
+    act_snooze_short = menu.addAction(tray_vm.property("snooze_short_label"))
+    act_snooze_short.triggered.connect(tray_vm.snooze_short)
+    act_snooze_long = menu.addAction(tray_vm.property("snooze_long_label"))
+    act_snooze_long.triggered.connect(tray_vm.snooze_long)
     menu.addSeparator()
     act_status = menu.addAction(translator.tr_key("action.open"))
     act_status.triggered.connect(lambda: show_window("main", "MainView.qml", 480, 460))
@@ -218,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
 
     def relabel() -> None:
         act_toggle.setText(tray_vm.property("toggle_label"))
+        act_snooze_short.setText(tray_vm.property("snooze_short_label"))
+        act_snooze_long.setText(tray_vm.property("snooze_long_label"))
         act_status.setText(translator.tr_key("action.open"))
         act_settings.setText(tray_vm.property("settings_label"))
         act_about.setText(tray_vm.property("about_label"))

@@ -9,6 +9,7 @@
   "status.clear.detail": "Watching. Nobody else is looking.",
   "status.clear.engaging": "Observer spotted…",
   "status.paused.detail": "Watching is paused. Your screen is not being watched.",
+  "status.snoozed.detail": "Timed pause: watching will resume on its own. Until then, your screen is not being watched.",
 
   "camera.active": "Camera on",
   "camera.inactive": "Camera off",
@@ -27,6 +28,7 @@
 
   "action.pause": "Pause",
   "action.resume": "Resume watching",
+  "action.snooze": "Pause for {minutes} min",
   "action.settings": "Settings…",
   "action.about": "About & limits",
   "action.quit": "Quit",

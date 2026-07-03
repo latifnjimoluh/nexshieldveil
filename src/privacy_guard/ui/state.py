@@ -22,6 +22,12 @@ PIXELATE_BLOCKS_RANGE = (2, 256)
 # strictly inside guarantees a restored/clamped snapshot always builds a valid
 # AppConfig for the worker (the UI slider itself only offers 5-40).
 SENSITIVITY_DEG_RANGE = (1.0, 89.0)
+# Timed pause ("snooze", M-R3): the tray offers these two durations; any
+# programmatic value is clamped to the range so a snooze can never be zero
+# (a busy-loop) nor effectively permanent (the user asked for *temporary*).
+SNOOZE_SHORT_MINUTES = 5
+SNOOZE_LONG_MINUTES = 15
+SNOOZE_MINUTES_RANGE = (1, 480)
 
 
 class ProtectionState(Enum):
@@ -108,6 +114,9 @@ class UiSnapshot:
     # UI-only: whether the live camera preview (what the camera sees + detections) is
     # shown. Off by default — the preview is strictly opt-in.
     preview_enabled: bool = False
+    # Session-only (never persisted): when set, the pause is temporary and watching
+    # resumes by itself at that monotonic-clock instant (milliseconds).
+    snoozed_until_ms: float | None = None
 
     @property
     def protection_state(self) -> ProtectionState:
@@ -150,6 +159,10 @@ def detail_key(snapshot: UiSnapshot) -> str:
     state = snapshot.protection_state
     if state is ProtectionState.CLEAR and snapshot.engaging:
         return "status.clear.engaging"
+    if state is ProtectionState.PAUSED and snapshot.snoozed_until_ms is not None:
+        # A timed pause: same logical state, but the copy must say watching
+        # resumes by itself (a plain 'paused' would read as 'until further notice').
+        return "status.snoozed.detail"
     return f"status.{state.value.removeprefix('camera_')}.detail"
 
 

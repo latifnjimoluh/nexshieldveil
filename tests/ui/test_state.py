@@ -125,6 +125,15 @@ def test_detail_key_uses_error_detail_when_running_and_errored() -> None:
     assert detail_key(snap) == "error.permission_denied.detail"
 
 
+def test_detail_key_distinguishes_snoozed_from_plain_paused() -> None:
+    # Same logical state (PAUSED), but the copy must say watching auto-resumes.
+    paused = UiSnapshot(running=False)
+    snoozed = UiSnapshot(running=False, snoozed_until_ms=123_456.0)
+    assert paused.protection_state is snoozed.protection_state is ProtectionState.PAUSED
+    assert detail_key(paused) == "status.paused.detail"
+    assert detail_key(snoozed) == "status.snoozed.detail"
+
+
 def test_primary_action_id_per_state() -> None:
     assert primary_action_id(UiSnapshot(running=False)) == "resume"
     assert primary_action_id(UiSnapshot(running=True)) == "pause"

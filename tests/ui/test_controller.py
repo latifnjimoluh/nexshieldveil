@@ -136,6 +136,67 @@ def test_setting_same_value_emits_no_signal(ctrl: FakeController, record) -> Non
 
 
 # --------------------------------------------------------------------------- #
+# timed pause / snooze (M-R3): pauses now, resumes by itself
+# --------------------------------------------------------------------------- #
+def test_snooze_pauses_and_arms_the_resume_timer(ctrl: FakeController) -> None:
+    ctrl.enable()
+    ctrl.snooze(5)
+    assert ctrl.property("running") is False
+    assert ctrl.property("camera_active") is False  # camera released, like a pause
+    assert ctrl.snapshot.snoozed_until_ms is not None
+    assert ctrl._snooze_timer.isActive()
+    assert ctrl._snooze_timer.interval() == 5 * 60_000
+
+
+def test_snooze_minutes_are_clamped(ctrl: FakeController) -> None:
+    ctrl.snooze(0)
+    assert ctrl._snooze_timer.interval() == 1 * 60_000
+    ctrl.snooze(10_000)
+    assert ctrl._snooze_timer.interval() == 480 * 60_000
+
+
+def test_snooze_elapsed_resumes_watching(ctrl: FakeController) -> None:
+    ctrl.snooze(5)
+    ctrl._on_snooze_elapsed()  # what the timer calls when time is up
+    assert ctrl.property("running") is True
+    assert ctrl.snapshot.snoozed_until_ms is None
+
+
+def test_manual_resume_cancels_the_snooze(ctrl: FakeController) -> None:
+    ctrl.snooze(5)
+    ctrl.enable()
+    assert ctrl.snapshot.snoozed_until_ms is None
+    assert not ctrl._snooze_timer.isActive()
+
+
+def test_manual_pause_cancels_the_snooze(ctrl: FakeController) -> None:
+    # 'Pause' means 'until I say so': the auto-resume must not fire later.
+    ctrl.snooze(5)
+    ctrl.pause()
+    assert ctrl.snapshot.snoozed_until_ms is None
+    assert not ctrl._snooze_timer.isActive()
+    ctrl._on_snooze_elapsed()  # a stale timer callback must be a no-op
+    assert ctrl.property("running") is False
+
+
+def test_snoozing_again_rearms_with_the_new_duration(ctrl: FakeController) -> None:
+    ctrl.snooze(5)
+    first_until = ctrl.snapshot.snoozed_until_ms
+    ctrl.snooze(15)
+    assert ctrl._snooze_timer.interval() == 15 * 60_000
+    assert ctrl.snapshot.snoozed_until_ms is not None
+    assert ctrl.snapshot.snoozed_until_ms > first_until
+
+
+def test_snooze_emits_snooze_changed(ctrl: FakeController, record) -> None:
+    events = record(ctrl.snooze_changed)
+    ctrl.snooze(5)
+    assert len(events) == 1
+    ctrl.enable()
+    assert len(events) == 2  # cleared
+
+
+# --------------------------------------------------------------------------- #
 # intent signals reach the shell (recorded by the fake)
 # --------------------------------------------------------------------------- #
 def test_intents_are_emitted(ctrl: FakeController) -> None:
