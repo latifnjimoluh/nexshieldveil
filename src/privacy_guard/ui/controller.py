@@ -24,6 +24,7 @@ from PySide6.QtCore import Property, QObject, Signal, Slot
 from privacy_guard.ui.state import (
     BLUR_RADIUS_RANGE,
     PIXELATE_BLOCKS_RANGE,
+    SENSITIVITY_DEG_RANGE,
     CameraError,
     UiSnapshot,
 )
@@ -80,6 +81,8 @@ class AppController(QObject):
         config_fields = (
             "masking_strategy",
             "opacity",
+            "blur_radius",
+            "pixelate_blocks",
             "sensitivity_deg",
             "trigger_ms",
             "release_ms",
@@ -206,8 +209,9 @@ class AppController(QObject):
 
     @Slot(float)
     def set_sensitivity_deg(self, deg: float) -> None:
-        """Set the gaze tolerance in degrees (higher = masks more readily)."""
-        self._update(sensitivity_deg=float(deg))
+        """Set the gaze tolerance in degrees (higher = masks more readily), clamped."""
+        lo, hi = SENSITIVITY_DEG_RANGE
+        self._update(sensitivity_deg=min(hi, max(lo, float(deg))))
 
     @Slot(int)
     def set_trigger_ms(self, ms: int) -> None:

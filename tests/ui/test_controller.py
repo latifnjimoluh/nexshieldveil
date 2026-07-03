@@ -110,6 +110,24 @@ def test_config_setters_emit_config_changed(ctrl: FakeController, record) -> Non
     assert len(cfg) == 4
 
 
+def test_blur_and_pixelate_changes_emit_config_changed(ctrl: FakeController, record) -> None:
+    # Regression (M-R2): these two were missing from the change detection, so
+    # QML captions never refreshed and autosave would have missed them.
+    cfg = record(ctrl.config_changed)
+    ctrl.set_blur_radius(31)
+    ctrl.set_pixelate_blocks(48)
+    assert len(cfg) == 2
+
+
+def test_sensitivity_is_clamped_inside_the_config_bounds(ctrl: FakeController) -> None:
+    # GeometryConfig requires 0 < deg < 90 (exclusive); a restored/junk value
+    # must never be able to build an invalid worker config.
+    ctrl.set_sensitivity_deg(500.0)
+    assert ctrl.property("sensitivity_deg") == 89.0
+    ctrl.set_sensitivity_deg(-3.0)
+    assert ctrl.property("sensitivity_deg") == 1.0
+
+
 def test_setting_same_value_emits_no_signal(ctrl: FakeController, record) -> None:
     ctrl.enable()
     runs = record(ctrl.running_changed)

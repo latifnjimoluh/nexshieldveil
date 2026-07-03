@@ -9,6 +9,7 @@ from privacy_guard.config import AppConfig
 from privacy_guard.policy import PolicyState
 from privacy_guard.ui.core_controller import (
     CoreController,
+    app_config_from_snapshot,
     masking_config_from_snapshot,
     snapshot_from_config,
 )
@@ -56,6 +57,35 @@ def test_masking_config_from_snapshot_roundtrips_the_defaults() -> None:
     cfg = AppConfig()
     snap = snapshot_from_config(cfg)
     assert masking_config_from_snapshot(snap) == cfg.masking
+
+
+def test_app_config_from_snapshot_reflects_runtime_settings() -> None:
+    # The worker is built from the snapshot-merged config, so persisted or
+    # edited detection settings actually reach the pipeline (M-R2).
+    cfg = AppConfig()
+    snap = UiSnapshot(
+        masking_strategy="pixelate",
+        opacity=0.6,
+        sensitivity_deg=24.0,
+        trigger_ms=600,
+        release_ms=900,
+        camera_index=1,
+    )
+    merged = app_config_from_snapshot(cfg, snap)
+    assert merged.camera.device_index == 1
+    assert merged.geometry.gaze_tolerance_deg == 24.0
+    assert merged.policy.trigger_ms == 600
+    assert merged.policy.release_ms == 900
+    assert merged.masking == masking_config_from_snapshot(snap)
+    # Non-UI parts pass through untouched.
+    assert merged.detection == cfg.detection
+    assert merged.tracking == cfg.tracking
+    assert merged.geometry.screen_width_mm == cfg.geometry.screen_width_mm
+
+
+def test_app_config_from_snapshot_roundtrips_the_defaults() -> None:
+    cfg = AppConfig()
+    assert app_config_from_snapshot(cfg, snapshot_from_config(cfg)) == cfg
 
 
 def test_apply_frame_result_sets_protected(qapp) -> None:

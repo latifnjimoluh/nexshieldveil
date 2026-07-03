@@ -38,6 +38,9 @@ build by two complementary layers in `tests/privacy/`:
    - *Enforced by:* `test_no_files_written_during_run` spies on `open` (and forbids
      `numpy.save`/`savez`) and fails on any write; `test_no_image_files_appear_on_disk`
      runs a full session in an empty directory and asserts no image artifacts appear.
+   - The only things persisted are the user's *preferences* (language, onboarding
+     flag, and the settings panel values — numbers and names, never images), stored
+     locally via Qt's standard `QSettings` so they survive a restart.
 
 3. **No frame accumulation.** Frame buffers are not retained across iterations, so
    memory does not grow and old frames cannot be exfiltrated later.

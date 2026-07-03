@@ -14,10 +14,16 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QObject, QThread, QTimer, Signal
 
 from privacy_guard.app import FrameResult
-from privacy_guard.config import AppConfig, MaskingConfig
+from privacy_guard.config import (
+    AppConfig,
+    CameraConfig,
+    GeometryConfig,
+    MaskingConfig,
+    PolicyConfig,
+)
 from privacy_guard.ui.controller import AppController
 from privacy_guard.ui.state import CameraError, UiSnapshot
 
@@ -50,6 +56,28 @@ def masking_config_from_snapshot(snapshot: UiSnapshot) -> MaskingConfig:
         opacity=snapshot.opacity,
         blur_radius=snapshot.blur_radius,
         pixelate_blocks=snapshot.pixelate_blocks,
+    )
+
+
+def app_config_from_snapshot(config: AppConfig, snapshot: UiSnapshot) -> AppConfig:
+    """Full config reflecting the user's CURRENT settings, for the pipeline worker.
+
+    Same principle as :func:`masking_config_from_snapshot`, extended to detection:
+    the worker must see what the user set (restored at startup, or edited since),
+    not the startup TOML. Every override goes through a *validated* pydantic
+    construction, so the controller's clamps and the config bounds stay aligned.
+    """
+    return config.model_copy(
+        update={
+            "camera": CameraConfig(
+                **{**config.camera.model_dump(), "device_index": snapshot.camera_index}
+            ),
+            "geometry": GeometryConfig(
+                **{**config.geometry.model_dump(), "gaze_tolerance_deg": snapshot.sensitivity_deg}
+            ),
+            "policy": PolicyConfig(trigger_ms=snapshot.trigger_ms, release_ms=snapshot.release_ms),
+            "masking": masking_config_from_snapshot(snapshot),
+        }
     )
 
 
@@ -177,6 +205,13 @@ class CoreController(AppController):
         self._fade_ms = fade_ms
         self._worker: _PipelineWorker | None = None
         self._overlay: object | None = None
+        # Detection-threshold edits restart the worker (the pipeline reads them at
+        # construction). Debounced so dragging a slider triggers ONE restart, not
+        # one per tick — reopening the camera + MediaPipe is expensive.
+        self._restart_timer = QTimer(self)
+        self._restart_timer.setSingleShot(True)
+        self._restart_timer.setInterval(800)
+        self._restart_timer.timeout.connect(self._apply_detection_settings)
 
     # ---- result -> snapshot (hardware-free, unit-tested) ----------------- #
     def apply_frame_result(self, result: FrameResult) -> None:
@@ -221,7 +256,10 @@ class CoreController(AppController):
         self._stop_worker()
         if qt_available() and self._overlay is None:
             self._rebuild_overlay()
-        self._worker = _PipelineWorker(self._config, self._model_path, self)
+        # The worker gets the snapshot-merged config, so persisted/edited settings
+        # actually reach the pipeline (the startup TOML is only the base).
+        worker_config = app_config_from_snapshot(self._config, self._snap)
+        self._worker = _PipelineWorker(worker_config, self._model_path, self)
         self._worker.set_preview(self._snap.preview_enabled)
         self._worker.produced.connect(self.apply_frame_result)
         self._worker.frame_produced.connect(self.frame_ready)
@@ -243,6 +281,36 @@ class CoreController(AppController):
         )
         if was_masked:
             self._overlay.set_masked(True)  # type: ignore[attr-defined]
+
+    # ---- detection edits reach the pipeline via a debounced worker restart -- #
+    def _apply_detection_settings(self) -> None:  # pragma: no cover - hardware
+        """Restart the worker so new detection thresholds reach the pipeline.
+
+        The masking stays engaged/level through the restart only via the policy
+        re-deciding; the brief detection gap is acceptable because this only
+        happens while the user is at the controls, adjusting sliders.
+        """
+        if self._worker is not None and self._snap.running:
+            self._start_worker()
+
+    def _schedule_worker_restart(self) -> None:  # pragma: no cover - hardware
+        if self._worker is not None:
+            self._restart_timer.start()
+
+    def set_sensitivity_deg(self, deg: float) -> None:  # pragma: no cover - hardware
+        """Change the gaze tolerance and (debounced) apply it to the live pipeline."""
+        super().set_sensitivity_deg(deg)
+        self._schedule_worker_restart()
+
+    def set_trigger_ms(self, ms: int) -> None:  # pragma: no cover - hardware
+        """Change the trigger delay and (debounced) apply it to the live pipeline."""
+        super().set_trigger_ms(ms)
+        self._schedule_worker_restart()
+
+    def set_release_ms(self, ms: int) -> None:  # pragma: no cover - hardware
+        """Change the release delay and (debounced) apply it to the live pipeline."""
+        super().set_release_ms(ms)
+        self._schedule_worker_restart()
 
     # ---- masking edits take effect live on the overlay ------------------- #
     def set_masking_strategy(self, strategy: str) -> None:  # pragma: no cover - display
@@ -270,6 +338,7 @@ class CoreController(AppController):
             self._rebuild_overlay()
 
     def _stop_worker(self) -> None:  # pragma: no cover - hardware
+        self._restart_timer.stop()
         if self._worker is not None:
             self._worker.stop()
             self._worker.wait(2000)

@@ -116,6 +116,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     from privacy_guard.ui.core_controller import CoreController
     from privacy_guard.ui.fonts import load_bundled_fonts
     from privacy_guard.ui.i18n_catalog import normalize_language
+    from privacy_guard.ui.persistence import restore_settings, save_settings
     from privacy_guard.ui.preview import CameraImageProvider
     from privacy_guard.ui.qml_app import install_context, view_url
     from privacy_guard.ui.theme.theme_controller import ThemeController
@@ -147,6 +148,15 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     # Reduced motion also disables the overlay's veil->frame crossfade (the
     # masking itself is never animated; only the cosmetic swap after it is).
     controller = CoreController(config, model_path, fade_ms=0 if theme.reduced_motion else 120)
+
+    # M-R2: settings survive restarts. Restore BEFORE anything starts or binds
+    # (the setters clamp/validate, so a corrupt store degrades to defaults),
+    # THEN autosave on every config change — order matters, or restoring would
+    # immediately write back what it just read.
+    restore_settings(controller, settings)
+    controller.config_changed.connect(lambda: save_settings(controller.snapshot, settings))
+    app.aboutToQuit.connect(settings.sync)
+
     provider = CameraImageProvider()
     status_vm = StatusViewModel(controller, translator)
     settings_vm = SettingsViewModel(controller, translator)

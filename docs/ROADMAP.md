@@ -156,7 +156,16 @@ avec temporisation (déclenchement après N ms de regard détecté, levée aprè
       backoff plafonné, sans fin, en renumérotant frames et timestamps (MediaPipe exige
       des timestamps strictement croissants). La perte est visible (état « reconnexion
       automatique » + action « Réessayer maintenant »), jamais silencieuse.
-- [ ] **M-R2 — Persistance des réglages** (TOML utilisateur `%APPDATA%`, relu au démarrage).
+- [x] **M-R2 — Persistance des réglages.** Les réglages ne survivaient pas à un
+      redémarrage (rien ne les écrivait nulle part) et, plus grave, sensibilité et
+      délais ne parvenaient même pas au pipeline en cours de session (le worker
+      lisait la config TOML de démarrage). Corrigé : `ui/persistence.py` (logique
+      pure : sauvegarde/restauration tolérante via le canal `QSettings` déjà
+      utilisé pour langue/onboarding — valeurs stringifiées coercées, junk rejeté,
+      bornes clampées par les setters), le worker est construit depuis la config
+      fusionnée du snapshot (`app_config_from_snapshot`), et les seuils de
+      détection redémarrent le worker avec debounce. Bonus corrigé : flou et
+      pixelisation n'émettaient jamais `config_changed`.
 - [ ] **M-R3 (optionnel) — Pause temporisée** (snooze 5/15 min depuis le tray).
 
 ---

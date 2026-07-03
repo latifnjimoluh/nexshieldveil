@@ -18,6 +18,10 @@ from privacy_guard.policy import PolicyState
 # keeping them here lets the Qt-free controller clamp without importing pydantic.
 BLUR_RADIUS_RANGE = (1, 199)
 PIXELATE_BLOCKS_RANGE = (2, 256)
+# Mirrors GeometryConfig.gaze_tolerance_deg (0 < x < 90, exclusive): staying
+# strictly inside guarantees a restored/clamped snapshot always builds a valid
+# AppConfig for the worker (the UI slider itself only offers 5-40).
+SENSITIVITY_DEG_RANGE = (1.0, 89.0)
 
 
 class ProtectionState(Enum):
