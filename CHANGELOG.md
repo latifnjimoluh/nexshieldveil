@@ -7,6 +7,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 Rappel de périmètre, valable pour toutes les versions : NexShieldVeil **réduit** le
 risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
+## [0.3.3] — 2026-07-29
+
+### Ajouté
+- Le programme d'installation Windows est habillé aux couleurs du produit : le
+  logo apparaît sur la page d'accueil et dans l'en-tête de chaque page du wizard
+  (posé sur l'ardoise de la marque), en plus de l'icône déjà présente sur le
+  `Setup.exe` et l'application installée.
+
 ## [0.3.2] — 2026-07-29
 
 ### Ajouté

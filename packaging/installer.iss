@@ -10,7 +10,7 @@
 ; anyone can install and run it.
 
 #define MyAppName "NexShieldVeil"
-#define MyAppVersion "0.3.2"
+#define MyAppVersion "0.3.3"
 #define MyAppExe "NexShieldVeil.exe"
 
 [Setup]
@@ -29,6 +29,10 @@ WizardStyle=modern
 ; Installer .exe icon + the icon shown in "Apps & features" / uninstall list.
 SetupIconFile=..\src\privacy_guard\ui\assets\branding\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExe}
+; Branded wizard pages (welcome/finished side panel + header logo). Without these
+; Inno shows its generic blue artwork; the BMPs sit the logo on the brand slate.
+WizardImageFile=..\src\privacy_guard\ui\assets\branding\wizard_large.bmp
+WizardSmallImageFile=..\src\privacy_guard\ui\assets\branding\wizard_small.bmp
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

@@ -9,6 +9,8 @@ files the app and installer actually load:
   taskbar, the .exe resource, the Inno installer).
 * ``wordmark.png`` — the horizontal lockup (shield + name), trimmed to content,
   for the About and onboarding screens.
+* ``wizard_large.bmp`` / ``wizard_small.bmp`` — the Inno Setup installer wizard
+  images (welcome side panel + header logo), the mark on the brand slate.
 
 Regenerate after changing a source logo::
 
@@ -34,6 +36,15 @@ _ICO_SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256
 _ICON_CANVAS = 512  # master PNG side length
 _ICON_MARGIN = 0.12  # fraction of the canvas kept clear around the mark
 
+# The brand slate (Theme `base`) the logo is designed to sit on — the frosted
+# glass mark reads far better on it than on Inno's default blue/white wizard.
+_SLATE = (0x13, 0x16, 0x1B)
+
+# Inno Setup wizard images (modern style). Both are BMP with no alpha; Inno scales
+# the source down for higher DPI, so we author at the largest documented size.
+_WIZARD_LARGE = (497, 314)  # WizardImageFile — welcome/finished side panel
+_WIZARD_SMALL = (138, 140)  # WizardSmallImageFile — header on every other page
+
 
 def _trim_to_content(image: Image.Image) -> Image.Image:
     """Crop away fully-transparent borders so the artwork fills the frame."""
@@ -55,6 +66,22 @@ def _square_icon(source: Image.Image, canvas: int, margin: float) -> Image.Image
     return out
 
 
+def _wizard_bmp(mark: Image.Image, size: tuple[int, int], fill: float) -> Image.Image:
+    """Centre the mark on an opaque slate BMP canvas (no alpha; Inno wants BMP).
+
+    ``fill`` is the fraction of the shorter side the mark should occupy.
+    """
+    canvas = Image.new("RGBA", size, (*_SLATE, 255))
+    art = _trim_to_content(mark)
+    target = int(min(size) * fill)
+    scale = target / max(art.width, art.height)
+    art = art.resize(
+        (max(1, round(art.width * scale)), max(1, round(art.height * scale))), Image.LANCZOS
+    )
+    canvas.paste(art, ((size[0] - art.width) // 2, (size[1] - art.height) // 2), art)
+    return canvas.convert("RGB")  # BMP has no alpha channel
+
+
 def main() -> int:
     icon_src = Image.open(_SOURCE / "icon.png")
     wordmark_src = Image.open(_SOURCE / "wordmark.png")
@@ -66,9 +93,16 @@ def main() -> int:
     wordmark = _trim_to_content(wordmark_src)
     wordmark.save(_BRANDING / "wordmark.png")
 
-    print(f"icon.png     {icon.size}")
-    print(f"icon.ico     {[s for s, _ in _ICO_SIZES]}")
-    print(f"wordmark.png {wordmark.size}")
+    # Installer wizard: the wordmark on the big welcome panel, the shield alone in
+    # the compact header (a wide lockup would be unreadable at 138px).
+    _wizard_bmp(wordmark_src, _WIZARD_LARGE, fill=0.80).save(_BRANDING / "wizard_large.bmp")
+    _wizard_bmp(icon_src, _WIZARD_SMALL, fill=0.85).save(_BRANDING / "wizard_small.bmp")
+
+    print(f"icon.png          {icon.size}")
+    print(f"icon.ico          {[s for s, _ in _ICO_SIZES]}")
+    print(f"wordmark.png      {wordmark.size}")
+    print(f"wizard_large.bmp  {_WIZARD_LARGE}")
+    print(f"wizard_small.bmp  {_WIZARD_SMALL}")
     return 0
 
 
