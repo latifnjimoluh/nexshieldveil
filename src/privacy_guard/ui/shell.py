@@ -21,21 +21,6 @@ from privacy_guard.resources import default_model_path
 logger = logging.getLogger("privacy_guard.ui")
 
 
-_VIEWS = (
-    "GlassPanel.qml",
-    "PrimaryButton.qml",
-    "StatusPill.qml",
-    "CameraBadge.qml",
-    "Veil.qml",
-    "StatusView.qml",
-    "AboutView.qml",
-    "OnboardingView.qml",
-    "SettingsView.qml",
-    "CameraView.qml",
-    "MainView.qml",
-)
-
-
 def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build smoke test
     """Load every QML view offscreen and exit 0. Validates a (frozen) build's wiring."""
     import os
@@ -46,7 +31,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
 
     from privacy_guard.ui.fake_controller import FakeController
     from privacy_guard.ui.preview import CameraImageProvider
-    from privacy_guard.ui.qml_app import install_context, view_url
+    from privacy_guard.ui.qml_app import VIEWS, install_context, view_url
     from privacy_guard.ui.theme.theme_controller import ThemeController
     from privacy_guard.ui.translator import Translator
     from privacy_guard.ui.viewmodels import (
@@ -63,27 +48,48 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
     translator = Translator("fr")
     theme = ThemeController()
     provider = CameraImageProvider()
+    # Every view-model must stay referenced for the whole check: a context
+    # property whose Python object is collected turns into `null` in QML, and
+    # every binding on it then fails silently at runtime (AM-16).
+    view_models = {
+        "status": StatusViewModel(controller, translator),
+        "settings": SettingsViewModel(controller, translator),
+        "onboarding": OnboardingViewModel(controller, translator),
+        "about": AboutViewModel(translator),
+        "tray": TrayViewModel(controller, translator),
+        "camera": CameraViewModel(controller, translator, provider),
+    }
     engine = QQmlEngine()
     engine.addImageProvider(CameraImageProvider.PROVIDER_ID, provider)
-    install_context(
-        engine.rootContext(),
-        theme=theme,
-        translator=translator,
-        status=StatusViewModel(controller, translator),
-        settings=SettingsViewModel(controller, translator),
-        onboarding=OnboardingViewModel(controller, translator),
-        about=AboutViewModel(translator),
-        tray=TrayViewModel(controller, translator),
-        camera=CameraViewModel(controller, translator, provider),
-    )
-    for view in _VIEWS:
+    install_context(engine.rootContext(), theme=theme, translator=translator, **view_models)
+
+    # A view that instantiates but whose bindings all throw is a broken build, not
+    # a passing one — so runtime QML warnings fail the check too.
+    warnings: list[str] = []
+    engine.warnings.connect(lambda errs: warnings.extend(e.toString() for e in errs))
+
+    kept: list[object] = []
+    for view in VIEWS:
         component = QQmlComponent(engine, view_url(view))
         obj = component.create()
         if obj is None:
             errors = "; ".join(e.toString() for e in component.errors())
             print(f"SELFCHECK FAIL: {view}: {errors}", file=sys.stderr)
             return 1
-    print(f"SELFCHECK OK: {len(_VIEWS)} views loaded.")
+        kept.extend((component, obj))
+    # Tear the engine down *before* the view-models it exposes go out of scope.
+    # The reverse order re-evaluates every binding against a nulled context
+    # property and floods stderr with teardown noise that reads like real
+    # failures (views created by `create()` are JS-owned, so they die with the
+    # engine, not when `kept` is dropped).
+    kept.clear()
+    del engine
+    if warnings:
+        print(f"SELFCHECK FAIL: {len(warnings)} QML binding error(s):", file=sys.stderr)
+        for message in warnings[:20]:
+            print(f"  {message}", file=sys.stderr)
+        return 1
+    print(f"SELFCHECK OK: {len(VIEWS)} views loaded, no binding error.")
     return 0
 
 

@@ -1,0 +1,71 @@
+name: Rapport de bug
+description: Un comportement incorrect, un plantage, ou un réglage sans effet.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci du signalement. **Pour une faille de sécurité ou de confidentialité,
+        n'ouvrez pas d'issue publique** : voir [SECURITY.md](../blob/main/.github/SECURITY.md).
+
+        N'attachez **jamais** de photo ou de vidéo de webcam : nous n'en avons pas
+        besoin, et ce dépôt ne doit contenir aucune donnée biométrique.
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe
+      description: Et ce que vous attendiez à la place.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Comment le reproduire
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.3.1 (installeur Windows) ou le hash du commit"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Système
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Mode d'installation
+      options:
+        - Installeur Windows
+        - pip install -e ".[vision,ui]" (depuis les sources)
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux
+      description: >
+        Sortie de `nexshieldveil` lancé depuis un terminal, si vous en avez.
+        Relisez-la avant de coller : elle ne doit contenir aucune donnée personnelle.
+      render: text
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Périmètre
+      options:
+        - label: >
+            J'ai lu docs/LIMITATIONS.md et il ne s'agit pas d'une limite connue
+            (appareil qui filme l'écran, observateur hors champ, reflets,
+            téléobjectif, latence avant masquage).
+          required: true

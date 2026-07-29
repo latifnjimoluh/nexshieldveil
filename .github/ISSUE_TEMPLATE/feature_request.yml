@@ -1,0 +1,34 @@
+name: Proposition d'amélioration
+description: Une fonctionnalité ou un changement de comportement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Le problème
+      description: Quelle situation concrète cette amélioration résoudrait-elle ?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Ce que vous proposez
+    validations:
+      required: true
+  - type: textarea
+    id: tradeoff
+    attributes:
+      label: Contreparties
+      description: >
+        Coût en CPU/batterie, faux positifs, complexité, surface d'attaque…
+        Une proposition sans contrepartie identifiée est rarement une bonne proposition.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Périmètre
+      options:
+        - label: >
+            Ma proposition n'implique aucune reconnaissance d'identité, aucune
+            sortie réseau supplémentaire et aucune persistance d'image
+            (voir docs/ROADMAP.md §2).
+          required: true

@@ -22,6 +22,24 @@ def _ui_dir() -> Path:
 
 VIEWS_DIR = _ui_dir() / "views"
 
+# Every shipped view, in dependency order (leaf components first). This is the
+# single source of truth: the shell's `--check` selfcheck and the headless view
+# tests both iterate it, so a new view can never be added to one and forgotten
+# in the other (AM-16).
+VIEWS: tuple[str, ...] = (
+    "GlassPanel.qml",
+    "PrimaryButton.qml",
+    "StatusPill.qml",
+    "CameraBadge.qml",
+    "Veil.qml",
+    "StatusView.qml",
+    "AboutView.qml",
+    "OnboardingView.qml",
+    "SettingsView.qml",
+    "CameraView.qml",
+    "MainView.qml",
+)
+
 
 def view_url(name: str) -> QUrl:
     """Resolve a view file name (e.g. ``'StatusView.qml'``) to a local file URL."""

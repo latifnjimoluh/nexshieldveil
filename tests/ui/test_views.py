@@ -10,23 +10,14 @@ import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtGui import QAccessible
 
+from privacy_guard.ui.qml_app import VIEWS
 from privacy_guard.ui.state import CameraError, UiSnapshot
 
 pytestmark = pytest.mark.unit
 
-ALL_VIEWS = [
-    "GlassPanel.qml",
-    "PrimaryButton.qml",
-    "StatusPill.qml",
-    "CameraBadge.qml",
-    "Veil.qml",
-    "StatusView.qml",
-    "AboutView.qml",
-    "OnboardingView.qml",
-    "SettingsView.qml",
-    "CameraView.qml",
-    "MainView.qml",
-]
+# Single source of truth, shared with the shell's `--check` selfcheck (AM-16):
+# a view added there is automatically smoke-tested here.
+ALL_VIEWS = list(VIEWS)
 
 
 def _find(root: QObject, name: str) -> QObject:
@@ -48,6 +39,15 @@ def test_view_loads(qml, view) -> None:
     h = qml()
     obj = h.load(view)
     assert obj is not None
+
+
+def test_every_shipped_qml_file_is_listed() -> None:
+    # A .qml added to views/ but not to VIEWS would be loaded by nothing — neither
+    # this smoke test nor the shell's selfcheck would ever instantiate it.
+    from privacy_guard.ui.qml_app import VIEWS_DIR
+
+    on_disk = {path.name for path in VIEWS_DIR.glob("*.qml")}
+    assert on_disk == set(VIEWS), f"views/ and VIEWS disagree: {on_disk ^ set(VIEWS)}"
 
 
 # --------------------------------------------------------------------------- #

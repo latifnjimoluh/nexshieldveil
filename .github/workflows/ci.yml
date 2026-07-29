@@ -75,6 +75,12 @@ jobs:
       - name: Privacy guarantees (no network / no frame persistence)
         run: pytest -m privacy -v
 
+      - name: QML selfcheck (assembled wiring: engine + context + view-models)
+        # The unit tests instantiate each view against a fake context; this loads
+        # them through the real shell entry point, which is what a frozen build
+        # runs. It catches wiring regressions no view-model test can see.
+        run: nexshieldveil --check
+
       - name: Performance benchmarks
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         run: pytest -m performance -v
