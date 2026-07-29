@@ -14,9 +14,20 @@ Item {
         anchors.margins: Theme.space("md")
 
         Column {
+            id: obColumn
             anchors.fill: parent
             anchors.margins: Theme.space("xl")
             spacing: Theme.space("lg")
+
+            // Brand lockup — the first thing the user sees. Hidden if unbundled.
+            Image {
+                source: Brand.wordmark
+                visible: source != ""
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                width: Math.min(obColumn.width, 260)
+                height: width * 131 / 527  // native lockup ratio
+            }
 
             // Step progress (dots).
             Row {

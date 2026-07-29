@@ -22,6 +22,17 @@ Item {
                 width: parent.width
                 spacing: Theme.space("md")
 
+                // Brand lockup (shield + wordmark). Degrades to nothing if the
+                // asset is not bundled; the title text below still names the app.
+                Image {
+                    source: Brand.wordmark
+                    visible: source != ""
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    width: Math.min(col.width, 300)
+                    height: width * 131 / 527  // native lockup ratio
+                }
+
                 Text {
                     text: aboutVM.title
                     color: Theme.ink

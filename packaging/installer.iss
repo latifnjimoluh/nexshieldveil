@@ -10,7 +10,7 @@
 ; anyone can install and run it.
 
 #define MyAppName "NexShieldVeil"
-#define MyAppVersion "0.3.1"
+#define MyAppVersion "0.3.2"
 #define MyAppExe "NexShieldVeil.exe"
 
 [Setup]
@@ -26,6 +26,9 @@ OutputBaseFilename={#MyAppName}-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+; Installer .exe icon + the icon shown in "Apps & features" / uninstall list.
+SetupIconFile=..\src\privacy_guard\ui\assets\branding\icon.ico
+UninstallDisplayIcon={app}\{#MyAppExe}
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

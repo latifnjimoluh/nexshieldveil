@@ -22,6 +22,7 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtWidgets import QApplication
 
+from privacy_guard.ui.branding import Branding
 from privacy_guard.ui.fake_controller import FakeController
 from privacy_guard.ui.preview import CameraImageProvider
 from privacy_guard.ui.qml_app import install_context, view_url
@@ -65,6 +66,7 @@ class QmlHarness:
         self.updates = UpdatesViewModel(self.translator)
         self.provider = CameraImageProvider()
         self.camera = CameraViewModel(self.controller, self.translator, self.provider)
+        self.brand = Branding()
         self.engine = QQmlEngine()
         self.engine.addImportPath(str(view_url("").toLocalFile()))
         self.engine.addImageProvider(CameraImageProvider.PROVIDER_ID, self.provider)
@@ -79,6 +81,7 @@ class QmlHarness:
             tray=self.tray,
             camera=self.camera,
             updates=self.updates,
+            brand=self.brand,
         )
         self._kept: list[object] = []
 

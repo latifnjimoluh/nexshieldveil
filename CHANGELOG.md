@@ -7,9 +7,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 Rappel de périmètre, valable pour toutes les versions : NexShieldVeil **réduit** le
 risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
-## [Non publié]
+## [0.3.2] — 2026-07-29
 
 ### Ajouté
+- Identité visuelle : le logo NexShieldVeil (bouclier à l'œil voilé) est posé
+  partout — icône de l'application et de la barre des tâches, icône de la barre
+  d'état système (tray), icône du `.exe` et de l'installeur Windows, et lockup
+  affiché dans « À propos » et l'onboarding. Repli automatique sur l'ancien
+  bouclier dessiné si un asset manque.
 - « Démarrer à la session » est désormais réellement appliqué au système
   (registre Windows, fichier `.desktop` XDG, LaunchAgent macOS). Le réglage était
   jusqu'ici affiché et persisté sans jamais rien enregistrer.

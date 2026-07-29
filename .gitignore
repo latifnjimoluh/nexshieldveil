@@ -31,3 +31,10 @@ dist/
 # Packaging artefacts (PyInstaller work dir is build/; installer output)
 packaging/Output/
 *.manifest
+
+# --- Secrets (ne jamais versionner) ---
+.env
+.env.*
+!.env.example
+!*.env.example
+*.pre-rotate.bak

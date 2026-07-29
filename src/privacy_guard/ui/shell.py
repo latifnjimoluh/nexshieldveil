@@ -29,6 +29,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlComponent, QQmlEngine
 
+    from privacy_guard.ui.branding import Branding
     from privacy_guard.ui.fake_controller import FakeController
     from privacy_guard.ui.preview import CameraImageProvider
     from privacy_guard.ui.qml_app import VIEWS, install_context, view_url
@@ -60,6 +61,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
         "tray": TrayViewModel(controller, translator),
         "camera": CameraViewModel(controller, translator, provider),
         "updates": UpdatesViewModel(translator),
+        "brand": Branding(),
     }
     engine = QQmlEngine()
     engine.addImageProvider(CameraImageProvider.PROVIDER_ID, provider)
@@ -122,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         return 1
 
     from privacy_guard.ui import autostart
+    from privacy_guard.ui.branding import Branding, app_icon
     from privacy_guard.ui.calibrate import apply_detected_screen_size
     from privacy_guard.ui.core_controller import CoreController
     from privacy_guard.ui.fonts import load_bundled_fonts
@@ -137,7 +140,6 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         UpdateDownloadThread,
         auto_check_enabled,
         set_auto_check_enabled,
-        shield_icon,
     )
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
@@ -153,9 +155,22 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     config = load_config(args.config) if args.config else AppConfig()
     model_path = config.detection.model_path or default_model_path()
 
+    # Windows picks the taskbar icon (and groups windows) by AppUserModelID. Without
+    # an explicit one, a frozen PySide6 app shows the generic Python icon instead of
+    # ours. Harmless no-op elsewhere; best-effort, never fatal.
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("NexShieldVeil")
+        except Exception:  # pragma: no cover - cosmetic only
+            logger.debug("Could not set AppUserModelID; taskbar icon may be generic.")
+
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NexShieldVeil")
     app.setQuitOnLastWindowClosed(False)  # tray app: closing a window must not quit
+    icon = app_icon()
+    app.setWindowIcon(icon)  # taskbar + every window inherits this
     load_bundled_fonts()
 
     # AM-10: model the screen we are actually on. The default (520x290 mm) is a
@@ -218,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     tray_vm = TrayViewModel(controller, translator)
     camera_vm = CameraViewModel(controller, translator, provider)
     updates_vm = UpdatesViewModel(translator, auto_check=auto_check_enabled())
+    brand = Branding()
 
     translator.language_changed.connect(lambda: settings.setValue("language", translator.language))
     # A language switch must reach the overlay too, not just the windows.
@@ -244,8 +260,10 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
                 tray=tray_vm,
                 camera=camera_vm,
                 updates=updates_vm,
+                brand=brand,
             )
             v.setColor(theme.base)
+            v.setIcon(icon)  # the QML window's own title-bar / taskbar icon
             v.setResizeMode(QQuickView.ResizeMode.SizeRootObjectToView)
             v.setTitle("NexShieldVeil")
             v.resize(width, height)
@@ -257,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         win.requestActivate()
 
     # ---- tray (primary surface) ----------------------------------------- #
-    tray = QSystemTrayIcon(shield_icon(), app)
+    tray = QSystemTrayIcon(icon, app)
     menu = QMenu()
     act_toggle = menu.addAction(tray_vm.property("toggle_label"))
     act_toggle.triggered.connect(controller.toggle)

@@ -42,6 +42,12 @@ for pattern in ("*.ttf", "*.otf"):
     for src in glob.glob(os.path.join(_ui, "assets", "fonts", pattern)):
         datas.append((src, "privacy_guard/ui/assets/fonts"))
 
+# Brand assets (app icon shown in-app + the wordmark lockup for About/onboarding).
+# The .exe/installer icon is set separately below via EXE(icon=...).
+for pattern in ("*.png", "*.ico"):
+    for src in glob.glob(os.path.join(_ui, "assets", "branding", pattern)):
+        datas.append((src, "privacy_guard/ui/assets/branding"))
+
 hiddenimports += [
     # New QML (MVVM) UI — much of it is imported lazily inside shell.main().
     "privacy_guard.ui.shell",
@@ -137,6 +143,10 @@ pyz = PYZ(a.pure)
 
 _console = os.environ.get("NSV_CONSOLE", "0") == "1"
 
+# The Windows .exe resource icon (also what the taskbar/Explorer show for the app).
+_icon = os.path.join(_ui, "assets", "branding", "icon.ico")
+_exe_icon = _icon if os.path.exists(_icon) else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -149,7 +159,7 @@ exe = EXE(
     upx=False,
     console=_console,
     disable_windowed_traceback=False,
-    icon=None,
+    icon=_exe_icon,
 )
 
 coll = COLLECT(
