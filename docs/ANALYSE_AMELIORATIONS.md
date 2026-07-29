@@ -22,8 +22,19 @@
 | **AM-16** | ✅ | Selfcheck QML réparé (il passait au vert avec **toutes** les liaisons cassées) puis ajouté à la CI ; liste de vues unique. |
 | **AM-20** | ✅ | Étude déplacée dans `docs/`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, templates d'issue. |
 
-Les vagues 2 et 3 (§7) restent à faire. Le reste de ce document est l'analyse
-d'origine, conservée telle quelle comme référence.
+## 0 bis. Statut — vague 2 livrée
+
+| ID | Statut | Livré |
+|---|---|---|
+| **AM-8** | ✅ | `PrimaryUserSelector` : le sortant garde le titre sauf si un challenger le dépasse d'une marge pendant N images ; suivi **par position**, pas par indice de liste. Test d'intégration avec contre-épreuve. |
+| **AM-7** | ✅ | Troisième seuil dans la machine à états (`absence_ms`, désactivé par défaut) + raison du masquage remontée jusqu'à l'interface, avec sa propre formulation. |
+| **AM-11** | ✅ | `tracking` manquait dans `app_config_from_snapshot` — le réglage n'atteignait jamais le worker. Ajouté, plus un curseur « Réactivité » qui dit ce qu'on échange. |
+| **AM-13** | ✅ | `AdaptiveCadence` : régulation par échéance (la pause absorbe le traitement au lieu de s'y ajouter) + repli à 5 fps après 30 s d'image vide, plein régime dès qu'un visage apparaît ou que le masque est posé. |
+| **AM-10** | ✅ | Taille d'écran lue via `QScreen.physicalSize()` derrière un filtre de plausibilité pur (EDID est souvent faux) ; une taille écrite dans le TOML l'emporte. Asymétrie multi-écran documentée. |
+| **AM-14** | ✅ | `SessionSuspender` (pur) + adaptateurs Windows et logind. **macOS non implémenté**, dit explicitement plutôt qu'approximé. |
+
+La vague 3 (§7) reste à faire. Le reste de ce document est l'analyse d'origine,
+conservée telle quelle comme référence.
 
 ---
 

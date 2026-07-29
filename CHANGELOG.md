@@ -23,9 +23,28 @@ risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](
   détection ; la clé de configuration était documentée mais inopérante.
 - `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md` et templates d'issue.
 
+- **Masquer quand je m'éloigne** (désactivé par défaut) : l'écran se masque après
+  un délai sans aucun visage devant la caméra. Il réagit à l'absence, jamais à
+  l'identité — n'importe quel visage lève le masque.
+- La surveillance se met en pause pendant qu'une session est verrouillée
+  (Windows et Linux/logind ; macOS non couvert).
+- La cadence de capture s'adapte : elle retombe à 5 fps quand personne n'est là
+  depuis 30 s, et repart à plein régime dès qu'un visage apparaît.
+- Curseur **Réactivité** : le lissage qui ajoutait une latence cachée au masquage
+  est désormais visible et réglable.
+- La taille physique de l'écran est lue auprès du système au démarrage, au lieu
+  de supposer un 24 pouces.
+
 ### Corrigé
 - Le voile plein écran affichait ses libellés en français en dur, quelle que soit
   la langue choisie.
+- Deux personnes côte à côte à distance comparable faisaient basculer le titre
+  d'« utilisateur principal » d'une image à l'autre — et ce titre décide quel
+  regard est ignoré, donc chaque bascule inversait la décision.
+- Le réglage de lissage n'atteignait pas le pipeline (`tracking` était absent de
+  la config transmise au worker).
+- La cadence réelle était inférieure à la consigne : la pause était fixe et
+  s'ajoutait au temps de traitement au lieu de l'absorber.
 - Le selfcheck QML (`nexshieldveil --check`) sortait en succès alors que les
   view-models étaient collectés par le ramasse-miettes et que toutes les liaisons
   échouaient à l'exécution. Il vérifie désormais aussi les erreurs de liaison, et

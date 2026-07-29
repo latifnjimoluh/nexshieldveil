@@ -205,8 +205,33 @@ câblées** — exactement ce que la règle d'honnêteté du projet interdit.
       échouaient ; réparé, durci (les avertissements du moteur font échouer) et
       ajouté à la CI. Plus `CHANGELOG`, `SECURITY`, `CONTRIBUTING`, templates.
 
-Reste ouvert : vagues 2 et 3 de `docs/ANALYSE_AMELIORATIONS.md` (qualité de
-détection, autonomie, industrialisation de la release).
+### Chantier honnêteté — vague 2 (qualité de détection & autonomie)
+
+- [x] **AM-8 — Stabilité de l'utilisateur principal.** L'élection était calculée
+      image par image, sans mémoire : deux personnes côte à côte se passaient le
+      titre sur un micro-mouvement, et ce titre décide quel regard est ignoré.
+      Hystérésis d'élection (marge + persistance) avec suivi du sortant par
+      position, pas par indice de liste.
+- [x] **AM-7 — Verrouillage d'absence.** Le scénario « je m'absente, quelqu'un
+      s'installe » n'était structurellement pas couvert : avec un seul visage, ce
+      visage *est* l'utilisateur principal. Troisième seuil, désactivé par défaut,
+      avec la raison du masquage remontée à l'interface.
+- [x] **AM-11 — Latence réglable.** `tracking` était absent de la config
+      transmise au worker : le réglage n'y arrivait jamais. Corrigé, et exposé
+      comme un curseur « Réactivité » plutôt qu'un coefficient d'EMA.
+- [x] **AM-13 — Cadence.** Pause fixe qui s'ajoutait au traitement (15 fps
+      demandés → ~11 fps réels) et charge constante. Régulation par échéance +
+      repli au ralenti quand la pièce est vide.
+- [x] **AM-10 — Géométrie d'écran.** Défaut 24 pouces contre un 13 pouces réel :
+      rectangle presque quatre fois trop grand. Mesure système derrière un filtre
+      de plausibilité pur ; asymétrie multi-écran documentée.
+- [x] **AM-14 — Session verrouillée.** La caméra tournait derrière l'écran de
+      verrouillage. Suspension/reprise (Windows, logind) ; macOS non implémenté et
+      documenté comme tel.
+
+Reste ouvert : vague 3 de `docs/ANALYSE_AMELIORATIONS.md` (release automatisée,
+verrouillage des dépendances, job CI `[vision,ui]`, suppression de l'UI classic,
+regard iris, packaging multiplateforme).
 
 ---
 
