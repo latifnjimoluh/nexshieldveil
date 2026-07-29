@@ -129,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     from privacy_guard.ui.persistence import restore_settings, save_settings
     from privacy_guard.ui.preview import CameraImageProvider
     from privacy_guard.ui.qml_app import install_context, view_url
+    from privacy_guard.ui.session_lock import SessionSuspender, install_session_lock_monitor
     from privacy_guard.ui.theme.theme_controller import ThemeController
     from privacy_guard.ui.translator import Translator
     from privacy_guard.ui.updater_ui import (
@@ -364,6 +365,18 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     updates_vm.launch_requested.connect(launch_update)
     updates_vm.page_requested.connect(open_release_page)
     updates_vm.auto_check_changed.connect(set_auto_check_enabled)
+
+    # ---- session lock (AM-14): nothing to protect behind a lock screen ---- #
+    # Watching kept running with the camera indicator lit on a locked machine.
+    # The suspender restores exactly what the user had: a session they paused
+    # themselves does not come back running just because the screen was locked.
+    suspender = SessionSuspender(
+        is_running=lambda: controller.snapshot.running,
+        pause=controller.pause,
+        resume=controller.enable,
+    )
+    if not install_session_lock_monitor(app, suspender):
+        logger.info("Watching will keep running while the session is locked on this platform.")
 
     def open_main() -> None:
         show_window("main", "MainView.qml", 480, 460)

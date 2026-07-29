@@ -41,6 +41,17 @@ and hide the content.** This implies the limits below.
   blank or failed capture — the app then falls back to the **opaque veil**, so
   protection never silently drops to "nothing".
 
+## Locked sessions
+
+- **Windows and Linux (logind):** watching pauses while the session is locked and
+  resumes on unlock, so the camera is released and its indicator goes dark. A
+  session you had paused yourself stays paused.
+- **macOS: not implemented.** The lock notification needs a native API PySide6
+  does not expose, so watching keeps running (camera on) while the screen is
+  locked. Same on any desktop without the logind signals. Nothing is protected
+  less — there is simply nothing to protect behind a lock screen — but the CPU,
+  battery and camera indicator cost stays.
+
 ## Screen geometry and multiple monitors
 
 - **The decision models one screen**: the plane the camera sits above. Its size is
