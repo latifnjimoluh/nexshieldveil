@@ -110,6 +110,37 @@ Item {
                         text: settingsVM.release_caption
                     }
                 }
+                CheckBox {
+                    objectName: "absenceLockSwitch"
+                    text: Tr.t("settings.absence_lock")
+                    checked: settingsVM.absence_lock_enabled
+                    Accessible.name: text
+                    onToggled: settingsVM.set_absence_lock_enabled(checked)
+                }
+                Row {
+                    width: parent.width
+                    spacing: Theme.space("md")
+                    visible: settingsVM.absence_lock_enabled
+                    Slider {
+                        objectName: "absenceLockSlider"
+                        width: parent.width * 0.7
+                        from: settingsVM.absence_lock_min_ms; to: 120000; stepSize: 1000
+                        value: settingsVM.absence_lock_ms
+                        Accessible.name: Tr.t("settings.absence_lock.delay")
+                        onMoved: settingsVM.set_absence_lock_ms(value)
+                    }
+                    ValueLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: settingsVM.absence_lock_caption
+                    }
+                }
+                FieldLabel {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Theme.fontSize("caption")
+                    text: Tr.t("settings.absence_lock.hint")
+                }
+
                 FieldLabel {
                     width: parent.width
                     wrapMode: Text.WordWrap

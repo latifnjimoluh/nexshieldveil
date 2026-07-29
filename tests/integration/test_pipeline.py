@@ -14,7 +14,7 @@ from privacy_guard.app import PrivacyGuardPipeline
 from privacy_guard.capture import SyntheticFrameSource
 from privacy_guard.config import AppConfig
 from privacy_guard.overlay import RecordingRenderer
-from privacy_guard.policy import PolicyState
+from privacy_guard.policy import MaskReason, PolicyState
 from privacy_guard.vision import FaceObservation, ScriptedFaceDetector
 
 pytestmark = pytest.mark.integration
@@ -232,3 +232,46 @@ def test_a_real_move_still_transfers_the_primary_title() -> None:
 
     assert results[0].primary_index == 0
     assert results[-1].primary_index == 1
+
+
+# --------------------------------------------------------------------------- #
+# AM-7: the walk-away lock, end to end through the real pipeline
+# --------------------------------------------------------------------------- #
+def _absence_config(absence_ms: int) -> AppConfig:
+    cfg = AppConfig()
+    return cfg.model_copy(
+        update={"policy": cfg.policy.model_copy(update={"absence_ms": absence_ms})}
+    )
+
+
+def test_an_empty_frame_alone_never_masks_by_default() -> None:
+    # Nobody in front of the camera, walk-away lock off: the screen stays visible.
+    results, renderer = run_script([[] for _ in range(40)])
+    assert not any(r.is_masked for r in results)
+    assert renderer.transitions == []  # the veil never even moved
+
+
+def test_walking_away_masks_when_the_lock_is_enabled() -> None:
+    # 20 fps: 40 frames = 2 s of absence, past a 1 s lock.
+    results, _ = run_script([[] for _ in range(40)], _absence_config(1_000))
+    assert results[-1].is_masked is True
+    assert results[-1].mask_reason is MaskReason.ABSENCE
+    # ...and not before the delay: the first second is still clear.
+    assert results[10].is_masked is False
+
+
+def test_the_lone_stranger_case_the_lock_exists_for() -> None:
+    # The scenario the observer path structurally cannot catch: the user leaves,
+    # a stranger sits down. With one face in frame that face IS the primary user,
+    # so its gaze is ignored — only the absence that preceded it masks the screen.
+    script: list[list[FaceObservation]] = [[primary_user()] for _ in range(5)]
+    script += [[] for _ in range(40)]  # the user walks away (2 s)
+    script += [[observer_looking()] for _ in range(10)]  # a stranger sits down
+    results, _ = run_script(script, _absence_config(1_000))
+
+    assert results[4].is_masked is False  # user present: clear
+    assert results[44].is_masked is True  # absence: masked
+    assert results[44].mask_reason is MaskReason.ABSENCE
+    # The stranger's arrival does not instantly reveal the screen: the release
+    # hysteresis still has to elapse.
+    assert results[45].is_masked is True

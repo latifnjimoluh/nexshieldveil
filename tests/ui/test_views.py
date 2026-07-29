@@ -259,3 +259,15 @@ def test_update_view_check_button_triggers_the_intent(qml, record) -> None:
     requests = record(h.updates.check_requested)
     _find(root, "checkButton").clicked.emit()
     assert requests == [()]
+
+
+def test_settings_exposes_the_walk_away_lock(qml) -> None:
+    h = qml()
+    root = h.load("SettingsView.qml")
+    switch = _find(root, "absenceLockSwitch")
+    assert switch.property("checked") is False  # opt-in
+    assert _accessible_name(switch)
+    # The delay slider only appears once the lock is on.
+    assert _find(root, "absenceLockSlider").property("visible") is False
+    h.settings.set_absence_lock_enabled(True)
+    assert _find(root, "absenceLockSlider").property("visible") is True

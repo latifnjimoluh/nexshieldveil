@@ -405,3 +405,55 @@ def test_start_at_login_support_follows_the_platform(qapp, monkeypatch) -> None:
     assert vm.property("start_at_login_supported") is True
     monkeypatch.setattr(autostart, "is_supported", lambda: False)
     assert vm.property("start_at_login_supported") is False
+
+
+# --------------------------------------------------------------------------- #
+# walk-away lock (AM-7): a toggle plus its delay
+# --------------------------------------------------------------------------- #
+def test_absence_lock_starts_off_with_a_usable_default_delay(qapp) -> None:
+    from privacy_guard.ui.state import ABSENCE_LOCK_DEFAULT_MS
+
+    vm = SettingsViewModel(FakeController(), Translator("fr"))
+    assert vm.property("absence_lock_enabled") is False
+    # The slider still needs a sensible position while the feature is off.
+    assert vm.property("absence_lock_ms") == ABSENCE_LOCK_DEFAULT_MS
+
+
+def test_enabling_the_absence_lock_sets_the_default_delay(qapp) -> None:
+    from privacy_guard.ui.state import ABSENCE_LOCK_DEFAULT_MS
+
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_absence_lock_enabled(True)
+    assert controller.snapshot.absence_lock_ms == ABSENCE_LOCK_DEFAULT_MS
+    assert vm.property("absence_lock_enabled") is True
+
+
+def test_disabling_the_absence_lock_zeroes_it(qapp) -> None:
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_absence_lock_enabled(True)
+    vm.set_absence_lock_enabled(False)
+    assert controller.snapshot.absence_lock_ms == 0
+
+
+def test_the_delay_only_moves_while_the_lock_is_on(qapp) -> None:
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_absence_lock_ms(30_000)  # off: ignored, nothing is silently enabled
+    assert controller.snapshot.absence_lock_ms == 0
+    vm.set_absence_lock_enabled(True)
+    vm.set_absence_lock_ms(30_000)
+    assert controller.snapshot.absence_lock_ms == 30_000
+    assert "30" in vm.property("absence_lock_caption")
+
+
+def test_the_absence_delay_is_clamped_to_a_sane_floor(qapp) -> None:
+    # A one-second lock would fire every time detection blinks.
+    from privacy_guard.ui.state import ABSENCE_LOCK_MS_RANGE
+
+    controller = FakeController()
+    controller.set_absence_lock_ms(500)
+    assert controller.snapshot.absence_lock_ms == ABSENCE_LOCK_MS_RANGE[0]
+    controller.set_absence_lock_ms(99_999_999)
+    assert controller.snapshot.absence_lock_ms == ABSENCE_LOCK_MS_RANGE[1]

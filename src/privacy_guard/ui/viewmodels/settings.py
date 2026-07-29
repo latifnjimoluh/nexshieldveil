@@ -12,7 +12,11 @@ from PySide6.QtCore import Property, QObject, Signal, Slot
 from privacy_guard.config.models import MaskStrategyName
 from privacy_guard.masking import overlay_strategy_is_live
 from privacy_guard.ui.controller import AppController
-from privacy_guard.ui.state import sensitivity_key
+from privacy_guard.ui.state import (
+    ABSENCE_LOCK_DEFAULT_MS,
+    ABSENCE_LOCK_MS_RANGE,
+    sensitivity_key,
+)
 from privacy_guard.ui.translator import Translator
 
 _STRATEGIES: tuple[MaskStrategyName, ...] = ("veil", "blur", "pixelate")
@@ -58,6 +62,20 @@ class SettingsViewModel(QObject):
     def _get_release_floor(self) -> int:
         # The release slider can never go below the trigger (hysteresis invariant).
         return self._c.snapshot.trigger_ms
+
+    # ---- walk-away lock (AM-7): a toggle plus its delay ------------------- #
+    def _get_absence_lock_enabled(self) -> bool:
+        return self._c.snapshot.absence_lock_ms > 0
+
+    def _get_absence_lock_ms(self) -> int:
+        # The slider needs a sensible position even while the feature is off.
+        return self._c.snapshot.absence_lock_ms or ABSENCE_LOCK_DEFAULT_MS
+
+    def _get_absence_lock_caption(self) -> str:
+        return self._tr.tr_key("unit.s", value=round(self._get_absence_lock_ms() / 1000))
+
+    def _get_absence_lock_min_ms(self) -> int:
+        return ABSENCE_LOCK_MS_RANGE[0]
 
     # ---- masking --------------------------------------------------------- #
     def _get_opacity(self) -> float:
@@ -123,6 +141,10 @@ class SettingsViewModel(QObject):
     release_ms = Property(int, _get_release_ms, notify=changed)
     release_caption = Property(str, _get_release_caption, notify=changed)
     release_floor = Property(int, _get_release_floor, notify=changed)
+    absence_lock_enabled = Property(bool, _get_absence_lock_enabled, notify=changed)
+    absence_lock_ms = Property(int, _get_absence_lock_ms, notify=changed)
+    absence_lock_caption = Property(str, _get_absence_lock_caption, notify=changed)
+    absence_lock_min_ms = Property(int, _get_absence_lock_min_ms, notify=changed)
     opacity = Property(float, _get_opacity, notify=changed)
     masking_strategy = Property(str, _get_masking_strategy, notify=changed)
     masking_options = Property("QVariantList", _get_masking_options, notify=changed)
@@ -146,6 +168,20 @@ class SettingsViewModel(QObject):
     def set_trigger_ms(self, ms: int) -> None:
         """Update the trigger delay (may raise the release delay)."""
         self._c.set_trigger_ms(ms)
+
+    @Slot(bool)
+    def set_absence_lock_enabled(self, enabled: bool) -> None:
+        """Turn the walk-away lock on (at the current/default delay) or off."""
+        if enabled:
+            self._c.set_absence_lock_ms(self._get_absence_lock_ms())
+        else:
+            self._c.set_absence_lock_ms(0)
+
+    @Slot(int)
+    def set_absence_lock_ms(self, ms: int) -> None:
+        """Change the walk-away delay (ignored while the lock is off)."""
+        if self._c.snapshot.absence_lock_ms > 0:
+            self._c.set_absence_lock_ms(int(ms))
 
     @Slot(int)
     def set_release_ms(self, ms: int) -> None:

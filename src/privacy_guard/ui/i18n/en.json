@@ -120,5 +120,10 @@
   "update.action.install": "Download and install",
   "update.action.page": "Open the release page",
   "update.auto_check": "Check at startup",
-  "action.updates": "Updates"
+  "action.updates": "Updates",
+  "status.protected.absence.detail": "Screen hidden: you stepped away. It lifts when you come back.",
+  "settings.absence_lock": "Hide when I step away",
+  "settings.absence_lock.hint": "Hides the screen when no face has been seen for this long. NexShieldVeil recognises no one: it reacts to absence, not to who comes back.",
+  "settings.absence_lock.delay": "Absence delay",
+  "unit.s": "{value} s"
 }

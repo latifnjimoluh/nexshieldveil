@@ -6,7 +6,7 @@ import pytest
 
 from privacy_guard.app import FrameResult
 from privacy_guard.config import AppConfig
-from privacy_guard.policy import PolicyState
+from privacy_guard.policy import MaskReason, PolicyState
 from privacy_guard.ui.core_controller import (
     CoreController,
     app_config_from_snapshot,
@@ -148,3 +148,44 @@ def test_overlay_labels_survive_a_failing_provider() -> None:
 
     controller = CoreController(AppConfig(), "model.task", overlay_labels=boom)
     assert controller.overlay_labels() is None
+
+
+# --------------------------------------------------------------------------- #
+# walk-away lock (AM-7): the setting must reach the pipeline, and the reason
+# must reach the interface
+# --------------------------------------------------------------------------- #
+def test_absence_lock_reaches_the_worker_config() -> None:
+    snap = UiSnapshot(trigger_ms=400, release_ms=800, absence_lock_ms=12_000)
+    assert app_config_from_snapshot(AppConfig(), snap).policy.absence_ms == 12_000
+
+
+def test_absence_lock_off_reaches_the_worker_config_as_zero() -> None:
+    snap = UiSnapshot(absence_lock_ms=0)
+    assert app_config_from_snapshot(AppConfig(), snap).policy.absence_ms == 0
+
+
+def test_snapshot_from_config_mirrors_the_absence_lock() -> None:
+    cfg = AppConfig()
+    cfg = cfg.model_copy(update={"policy": cfg.policy.model_copy(update={"absence_ms": 9_000})})
+    assert snapshot_from_config(cfg).absence_lock_ms == 9_000
+
+
+@pytest.mark.parametrize(
+    ("reason", "expected"),
+    [(MaskReason.OBSERVER, "observer"), (MaskReason.ABSENCE, "absence"), (None, None)],
+)
+def test_mask_reason_is_mapped_onto_the_snapshot(qapp, reason, expected) -> None:
+    controller = CoreController(AppConfig(), "model.task")
+    result = FrameResult(
+        index=0,
+        timestamp_ms=0.0,
+        n_faces=0,
+        primary_index=None,
+        observer_present=False,
+        smoothed_confidence=0.0,
+        state=PolicyState.MASKED,
+        is_masked=True,
+        mask_reason=reason,
+    )
+    controller.apply_frame_result(result)
+    assert controller.snapshot.mask_reason == expected

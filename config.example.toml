@@ -33,17 +33,28 @@ smoothing_alpha = 0.4
 # Hysteresis (anti-flicker). release_ms must be >= trigger_ms.
 trigger_ms = 400   # observer must look this long before masking engages
 release_ms = 800   # observer must be gone this long before masking lifts
+# Walk-away lock: mask after this long with NO face in front of the camera.
+# 0 disables it (default). It reacts to absence, never to identity: any face
+# coming back lifts the mask, not necessarily yours (see docs/LIMITATIONS.md).
+absence_ms = 0
 
 [primary_user]
 # How the primary user is told apart from other faces (never identity).
 centrality_weight = 1.0
 size_weight = 1.0
+# Temporal hysteresis on the election: whoever holds the title keeps it unless a
+# challenger scores better by switch_margin for switch_patience frames in a row.
+# Without it, two people at comparable distance swap the title on a micro-movement
+# — and the title decides whose gaze is ignored.
+switch_margin = 0.08
+switch_patience = 3
+match_distance = 0.15   # max normalised move for a face to be "the same" next frame
 
 [masking]
-# Only "veil" is currently wired to the live overlay. "pixelate"/"blur" are
-# implemented + tested image transforms for a future capture-based path; selecting
-# them at runtime falls back to an opaque veil (with a warning).
+# All three styles are live. "veil" never captures the screen; "pixelate"/"blur"
+# transform ONE local capture taken at masking time (freeze-frame), kept in RAM
+# only and released when the mask lifts. A failed capture falls back to the veil.
 strategy = "veil"   # "veil" | "pixelate" | "blur"
 opacity = 0.92      # veil opacity, [0, 1]
-blur_radius = 21    # for strategy = "blur" (future capture-based masking)
-pixelate_blocks = 24  # for strategy = "pixelate" (future capture-based masking)
+blur_radius = 21    # for strategy = "blur"
+pixelate_blocks = 24  # for strategy = "pixelate" (fewer blocks = coarser)

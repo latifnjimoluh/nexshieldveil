@@ -120,5 +120,10 @@
   "update.action.install": "Télécharger et installer",
   "update.action.page": "Ouvrir la page de release",
   "update.auto_check": "Vérifier au démarrage",
-  "action.updates": "Mises à jour"
+  "action.updates": "Mises à jour",
+  "status.protected.absence.detail": "Écran masqué : tu t'es éloigné. Il se démasque à ton retour.",
+  "settings.absence_lock": "Masquer quand je m'éloigne",
+  "settings.absence_lock.hint": "Masque l'écran si plus aucun visage n'est vu pendant ce délai. NexShieldVeil ne reconnaît personne : il réagit à l'absence, pas à qui revient.",
+  "settings.absence_lock.delay": "Délai d'absence",
+  "unit.s": "{value} s"
 }

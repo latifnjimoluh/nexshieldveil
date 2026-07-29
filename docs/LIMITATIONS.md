@@ -41,6 +41,21 @@ and hide the content.** This implies the limits below.
   blank or failed capture — the app then falls back to the **opaque veil**, so
   protection never silently drops to "nothing".
 
+## Walk-away lock specifics
+
+- **It reacts to absence, not to identity.** When enabled, the screen hides after
+  the configured delay with no face in view, and lifts as soon as *a* face is
+  back — we do not, and will not, check that it is **your** face. If someone sits
+  down while you are away, the screen unhides for them like it would for you.
+  What the lock buys you is the window in between, which the observer detection
+  structurally cannot cover: with a single face in frame, that face is by
+  definition the primary user, so its gaze is ignored.
+- **It is off by default.** It changes when your screen hides, so it is your call.
+- **A blind camera looks like an empty room.** A covered lens, a very dark room,
+  or a face the detector cannot resolve all read as "nobody there" and will
+  eventually mask the screen. That is the safe direction to fail in, but it does
+  mean the lock can hide your screen while you are sitting right in front of it.
+
 ## Accuracy caveats
 
 - Webcam gaze estimation typically carries **1.5–3° of error**; we do **not** claim

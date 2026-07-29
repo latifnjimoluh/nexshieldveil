@@ -81,6 +81,15 @@ class PolicyConfig(_StrictModel):
     release_ms: int = Field(
         default=800, ge=0, description="Sustained absence before masking lifts (>= trigger_ms)."
     )
+    absence_ms: int = Field(
+        default=0,
+        ge=0,
+        le=600_000,
+        description=(
+            "Walk-away lock: mask after this long with NO face in front of the camera. "
+            "0 disables it (default): it changes when the screen hides, so it is opt-in."
+        ),
+    )
 
     @model_validator(mode="after")
     def _release_ge_trigger(self) -> PolicyConfig:

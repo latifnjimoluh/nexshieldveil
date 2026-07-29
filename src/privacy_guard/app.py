@@ -27,7 +27,7 @@ from privacy_guard.geometry import (
     gaze_vector,
 )
 from privacy_guard.overlay import RecordingRenderer, Renderer
-from privacy_guard.policy import DecisionStateMachine, PolicyState
+from privacy_guard.policy import DecisionStateMachine, MaskReason, PolicyState
 from privacy_guard.tracking import ExponentialSmoother, PrimaryUserSelector
 from privacy_guard.vision import FaceDetector, FaceObservation
 
@@ -46,6 +46,9 @@ class FrameResult:
     smoothed_confidence: float
     state: PolicyState
     is_masked: bool
+    # Why the mask is up (``None`` when it is not). The UI shows it: a screen that
+    # hides itself without saying why reads as a bug (AM-7).
+    mask_reason: MaskReason | None = None
 
 
 @dataclass(frozen=True)
@@ -157,7 +160,11 @@ class PrivacyGuardPipeline:
         confidence = float(self._smoother.update(1.0 if observer_raw else 0.0))
         observer_present = confidence >= 0.5
 
-        state = self._policy.update(observer_present, frame.timestamp_ms)
+        # `user_present` drives the walk-away lock: no face at all for
+        # `absence_ms` masks the screen (AM-7). Disabled unless configured.
+        state = self._policy.update(
+            observer_present, frame.timestamp_ms, user_present=bool(observations)
+        )
         self.renderer.set_masked(self._policy.is_masked)
 
         result = FrameResult(
@@ -169,6 +176,7 @@ class PrivacyGuardPipeline:
             smoothed_confidence=confidence,
             state=state,
             is_masked=self._policy.is_masked,
+            mask_reason=self._policy.mask_reason,
         )
         self.last_result = result
         if self._on_result is not None:

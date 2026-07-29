@@ -178,3 +178,29 @@ def test_camera_error_enum_is_exhaustive() -> None:
         "PERMISSION_DENIED",
         "MODEL_UNAVAILABLE",
     }
+
+
+# --------------------------------------------------------------------------- #
+# walk-away lock (AM-7): a screen that hides itself must say why
+# --------------------------------------------------------------------------- #
+def test_masking_because_of_absence_has_its_own_copy() -> None:
+    # The observer wording ("someone is looking at your screen") would be a lie
+    # here, and an unexplained black screen reads as a malfunction.
+    snap = UiSnapshot(running=True, is_masked=True, mask_reason="absence")
+    assert detail_key(snap) == "status.protected.absence.detail"
+
+
+def test_masking_because_of_an_observer_keeps_the_usual_copy() -> None:
+    snap = UiSnapshot(running=True, is_masked=True, mask_reason="observer")
+    assert detail_key(snap) == "status.protected.detail"
+
+
+def test_an_unset_reason_falls_back_to_the_usual_copy() -> None:
+    snap = UiSnapshot(running=True, is_masked=True)
+    assert detail_key(snap) == "status.protected.detail"
+
+
+def test_the_absence_reason_is_ignored_when_not_masked() -> None:
+    # A stale reason must never leak into the clear-state copy.
+    snap = UiSnapshot(running=True, is_masked=False, mask_reason="absence")
+    assert detail_key(snap) == "status.clear.detail"

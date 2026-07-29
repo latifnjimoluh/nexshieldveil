@@ -42,6 +42,7 @@ def snapshot_from_config(config: AppConfig) -> UiSnapshot:
         sensitivity_deg=config.geometry.gaze_tolerance_deg,
         trigger_ms=config.policy.trigger_ms,
         release_ms=config.policy.release_ms,
+        absence_lock_ms=config.policy.absence_ms,
         camera_index=config.camera.device_index,
     )
 
@@ -76,7 +77,11 @@ def app_config_from_snapshot(config: AppConfig, snapshot: UiSnapshot) -> AppConf
             "geometry": GeometryConfig(
                 **{**config.geometry.model_dump(), "gaze_tolerance_deg": snapshot.sensitivity_deg}
             ),
-            "policy": PolicyConfig(trigger_ms=snapshot.trigger_ms, release_ms=snapshot.release_ms),
+            "policy": PolicyConfig(
+                trigger_ms=snapshot.trigger_ms,
+                release_ms=snapshot.release_ms,
+                absence_ms=snapshot.absence_lock_ms,
+            ),
             "masking": masking_config_from_snapshot(snapshot),
         }
     )
@@ -241,6 +246,7 @@ class CoreController(AppController):
             camera_active=True,
             faces_count=result.n_faces,
             is_masked=result.is_masked,
+            mask_reason=result.mask_reason.value if result.mask_reason is not None else None,
             policy_state=result.state,
         )
 
@@ -349,6 +355,11 @@ class CoreController(AppController):
     def set_release_ms(self, ms: int) -> None:  # pragma: no cover - hardware
         """Change the release delay and (debounced) apply it to the live pipeline."""
         super().set_release_ms(ms)
+        self._schedule_worker_restart()
+
+    def set_absence_lock_ms(self, ms: int) -> None:  # pragma: no cover - hardware
+        """Change the walk-away lock and (debounced) apply it to the live pipeline."""
+        super().set_absence_lock_ms(ms)
         self._schedule_worker_restart()
 
     # ---- masking edits take effect live on the overlay ------------------- #

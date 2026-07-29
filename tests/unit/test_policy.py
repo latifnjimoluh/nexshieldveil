@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from privacy_guard.config import PolicyConfig
-from privacy_guard.policy import DecisionStateMachine, PolicyState
+from privacy_guard.policy import DecisionStateMachine, MaskReason, PolicyState
 
 pytestmark = pytest.mark.unit
 
@@ -154,3 +154,104 @@ def test_reset_returns_to_clear() -> None:
     sm.reset()
     assert sm.state is PolicyState.CLEAR
     assert not sm.is_masked
+
+
+# --------------------------------------------------------------------------- #
+# walk-away lock (AM-7): mask when NOBODY is in front of the camera
+# --------------------------------------------------------------------------- #
+def test_walk_away_lock_is_off_by_default() -> None:
+    # It changes *when* the screen hides, so it must be opt-in.
+    assert PolicyConfig().absence_ms == 0
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800)
+    for t in range(0, 60_000, 500):
+        machine.update(observer_present=False, timestamp_ms=t, user_present=False)
+    assert machine.is_masked is False
+
+
+def test_walk_away_lock_masks_after_the_configured_absence() -> None:
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=10_000)
+    machine.update(False, 0.0, user_present=True)
+    machine.update(False, 1_000.0, user_present=False)  # user leaves
+    assert machine.is_masked is False
+    machine.update(False, 10_500.0, user_present=False)  # 9.5 s of absence
+    assert machine.is_masked is False
+    machine.update(False, 11_000.0, user_present=False)  # 10 s of absence
+    assert machine.is_masked is True
+    assert machine.mask_reason is MaskReason.ABSENCE
+
+
+def test_a_brief_absence_does_not_mask() -> None:
+    # Detection blinks: a lost frame or two must not hide the screen.
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=10_000)
+    for t in range(0, 30_000, 100):
+        present = (t // 100) % 5 != 0  # one frame in five sees nothing
+        machine.update(False, float(t), user_present=present)
+    assert machine.is_masked is False
+
+
+def test_coming_back_lifts_the_walk_away_mask_after_the_release_delay() -> None:
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=5_000)
+    machine.update(False, 0.0, user_present=False)
+    machine.update(False, 5_000.0, user_present=False)
+    assert machine.is_masked is True
+    machine.update(False, 5_100.0, user_present=True)  # back at the desk
+    assert machine.is_masked is True  # the release hysteresis still applies
+    machine.update(False, 6_000.0, user_present=True)
+    assert machine.is_masked is False
+    assert machine.mask_reason is None
+
+
+def test_absence_timer_restarts_on_every_return() -> None:
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=5_000)
+    machine.update(False, 0.0, user_present=False)
+    machine.update(False, 4_000.0, user_present=True)  # a face is seen: timer resets
+    machine.update(False, 8_000.0, user_present=False)
+    assert machine.is_masked is False  # only 0 s of new absence at 8 s
+    machine.update(False, 13_000.0, user_present=False)
+    assert machine.is_masked is True
+
+
+def test_an_observer_takes_precedence_in_the_reported_reason() -> None:
+    # If both conditions hold, the copy shown to the user must be the one that
+    # matters most: someone IS looking.
+    machine = DecisionStateMachine(trigger_ms=0, release_ms=800, absence_ms=1_000)
+    machine.update(False, 0.0, user_present=False)
+    machine.update(False, 1_000.0, user_present=False)
+    assert machine.mask_reason is MaskReason.ABSENCE
+    machine.update(True, 1_100.0, user_present=True)
+    assert machine.mask_reason is MaskReason.OBSERVER
+
+
+def test_mask_reason_is_none_while_clear() -> None:
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=5_000)
+    machine.update(False, 0.0, user_present=True)
+    assert machine.mask_reason is None
+
+
+def test_observer_masking_reports_the_observer_reason() -> None:
+    machine = DecisionStateMachine(trigger_ms=0, release_ms=800)
+    machine.update(True, 0.0)
+    assert machine.is_masked is True
+    assert machine.mask_reason is MaskReason.OBSERVER
+
+
+def test_a_negative_absence_delay_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=-1)
+
+
+def test_reset_clears_the_absence_timer() -> None:
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=5_000)
+    machine.update(False, 0.0, user_present=False)
+    machine.reset()
+    machine.update(False, 5_000.0, user_present=False)
+    assert machine.is_masked is False  # the timer restarted at 5 s
+
+
+def test_default_user_present_keeps_the_previous_behaviour() -> None:
+    # Callers that never pass `user_present` must be unaffected, even with the
+    # lock configured (this is the backward-compatibility guarantee).
+    machine = DecisionStateMachine(trigger_ms=400, release_ms=800, absence_ms=1_000)
+    for t in range(0, 20_000, 500):
+        machine.update(False, float(t))
+    assert machine.is_masked is False

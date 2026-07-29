@@ -23,6 +23,7 @@ import time
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from privacy_guard.ui.state import (
+    ABSENCE_LOCK_MS_RANGE,
     BLUR_RADIUS_RANGE,
     PIXELATE_BLOCKS_RANGE,
     SENSITIVITY_DEG_RANGE,
@@ -95,6 +96,7 @@ class AppController(QObject):
             "sensitivity_deg",
             "trigger_ms",
             "release_ms",
+            "absence_lock_ms",
             "camera_index",
             "start_at_login",
         )
@@ -150,6 +152,9 @@ class AppController(QObject):
     def _get_camera_index(self) -> int:
         return self._snap.camera_index
 
+    def _get_absence_lock_ms(self) -> int:
+        return self._snap.absence_lock_ms
+
     def _get_start_at_login(self) -> bool:
         return self._snap.start_at_login
 
@@ -170,6 +175,7 @@ class AppController(QObject):
     trigger_ms = Property(int, _get_trigger_ms, notify=config_changed)
     release_ms = Property(int, _get_release_ms, notify=config_changed)
     camera_index = Property(int, _get_camera_index, notify=config_changed)
+    absence_lock_ms = Property(int, _get_absence_lock_ms, notify=config_changed)
     start_at_login = Property(bool, _get_start_at_login, notify=config_changed)
     preview_enabled = Property(bool, _get_preview_enabled, notify=preview_changed)
 
@@ -265,6 +271,19 @@ class AppController(QObject):
     def set_release_ms(self, ms: int) -> None:
         """Set the release delay, clamped to never fall below the trigger delay."""
         self._update(release_ms=max(int(ms), self._snap.trigger_ms))
+
+    @Slot(int)
+    def set_absence_lock_ms(self, ms: int) -> None:
+        """Set the walk-away lock delay in ms (0 disables it), clamped to sane bounds.
+
+        Opt-in on purpose: it changes *when* the screen hides, so the user decides.
+        """
+        ms = int(ms)
+        if ms <= 0:
+            self._update(absence_lock_ms=0)
+            return
+        lo, hi = ABSENCE_LOCK_MS_RANGE
+        self._update(absence_lock_ms=min(hi, max(lo, ms)))
 
     @Slot(int)
     def select_camera(self, index: int) -> None:

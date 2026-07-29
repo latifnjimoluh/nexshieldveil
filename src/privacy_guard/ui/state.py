@@ -28,6 +28,10 @@ SENSITIVITY_DEG_RANGE = (1.0, 89.0)
 SNOOZE_SHORT_MINUTES = 5
 SNOOZE_LONG_MINUTES = 15
 SNOOZE_MINUTES_RANGE = (1, 480)
+# Walk-away lock (AM-7). The floor is deliberately not tiny: a 1 s lock would fire
+# every time the detector blinks. Mirrors PolicyConfig.absence_ms (<= 600_000).
+ABSENCE_LOCK_MS_RANGE = (3_000, 600_000)
+ABSENCE_LOCK_DEFAULT_MS = 10_000
 
 
 class ProtectionState(Enum):
@@ -137,6 +141,8 @@ class UiSnapshot:
     running: bool = False
     error_kind: CameraError | None = None
     is_masked: bool = False
+    # Why the mask is up ("observer" / "absence"), so the UI can say it.
+    mask_reason: str | None = None
     policy_state: PolicyState = PolicyState.CLEAR
     camera_active: bool = False
     faces_count: int = 0
@@ -148,6 +154,8 @@ class UiSnapshot:
     sensitivity_deg: float = 18.0
     trigger_ms: int = 400
     release_ms: int = 800
+    # Walk-away lock (AM-7): mask after this long with no face at all. 0 = off.
+    absence_lock_ms: int = 0
     camera_index: int = 0
     start_at_login: bool = False
     # UI-only: whether the live camera preview (what the camera sees + detections) is
@@ -198,6 +206,10 @@ def detail_key(snapshot: UiSnapshot) -> str:
     state = snapshot.protection_state
     if state is ProtectionState.CLEAR and snapshot.engaging:
         return "status.clear.engaging"
+    if state is ProtectionState.PROTECTED and snapshot.mask_reason == "absence":
+        # Masking because nobody is there reads as a malfunction unless the copy
+        # says so — the observer wording ("someone is looking") would be false.
+        return "status.protected.absence.detail"
     if state is ProtectionState.PAUSED and snapshot.snoozed_until_ms is not None:
         # A timed pause: same logical state, but the copy must say watching
         # resumes by itself (a plain 'paused' would read as 'until further notice').
