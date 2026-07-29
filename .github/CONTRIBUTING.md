@@ -48,6 +48,20 @@ Un module qui a besoin de matériel doit exposer sa *décision* dans un module p
 `capture/resilience.py` (reconnexion caméra) et `overlay/compositor.py` (freeze-frame)
 sont les modèles à suivre : zéro dépendance matérielle, 100 % testés.
 
+## Dépendances
+
+Les installations utilisateur gardent des bornes ouvertes (`pyproject.toml`), mais la
+CI et le build installent un jeu **verrouillé et vérifié par empreinte** :
+
+```bash
+uv pip compile --universal --generate-hashes --extra dev --extra ui \
+  --python-version 3.11 pyproject.toml -o requirements-ci.txt
+```
+
+À régénérer quand une dépendance bouge, ou quand `pip-audit` signale une CVE sur une
+version épinglée — ce rouge est une invitation à mettre à jour, pas un bruit à faire
+taire.
+
 ## Tests
 
 TDD attendu : test d'abord, puis code. Un correctif **renforce** les tests, il ne les

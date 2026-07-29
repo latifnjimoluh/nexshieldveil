@@ -37,14 +37,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
 
-      - name: Install (core + dev + UI; PySide6 for headless QML/view-model tests)
+      - name: Install (locked: core + dev + UI; PySide6 for headless QML/view-model tests)
         run: |
           # Refresh build tooling too: the runner ships an old setuptools whose
           # deprecated package_index has known CVEs and would trip pip-audit.
-          # The [ui] extra (PySide6) is needed for the offscreen UI tests; no camera
-          # (vision) extra is installed, so the suite stays hardware-free.
           python -m pip install --upgrade pip setuptools wheel
-          pip install -e ".[dev,ui]"
+          # AM-5: exact, hash-verified versions so two runs a month apart install
+          # the same tree. The lock is universal (markers cover every OS in the
+          # matrix and both Python versions); regenerate it with:
+          #   uv pip compile --universal --generate-hashes --extra dev --extra ui \
+          #     --python-version 3.11 pyproject.toml -o requirements-ci.txt
+          # `--require-hashes` refuses anything unpinned, so the project itself is
+          # installed separately with --no-deps (it is not on PyPI and has no hash).
+          # The [ui] extra (PySide6) is needed for the offscreen UI tests; no camera
+          # (vision) extra is installed here, so this job stays hardware-free.
+          pip install --require-hashes -r requirements-ci.txt
+          pip install -e . --no-deps
 
       - name: Ruff lint
         run: ruff check .
@@ -58,6 +66,9 @@ jobs:
       - name: Bandit (security lint)
         run: bandit -r src -ll
 
+      # Note: with the lock in place, a CVE published against a pinned version
+      # turns this job red until `requirements-ci.txt` is regenerated. That is the
+      # point — it is a prompt to update, not noise to silence.
       - name: pip-audit (dependency CVEs)
         # Audits the CI venv (runtime + dev deps, all version-bounded) + build tooling.
         # --skip-editable skips THIS project (installed via `pip install -e .`): it
