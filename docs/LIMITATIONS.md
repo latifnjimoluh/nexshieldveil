@@ -41,6 +41,20 @@ and hide the content.** This implies the limits below.
   blank or failed capture — the app then falls back to the **opaque veil**, so
   protection never silently drops to "nothing".
 
+## Screen geometry and multiple monitors
+
+- **The decision models one screen**: the plane the camera sits above. Its size is
+  read from the operating system at startup when the value is believable (EDID
+  data is often missing or wrong), otherwise the configured one is used — and a
+  size you set yourself in the TOML always wins.
+- **The masking covers every screen**, since v0.3.0. So on a multi-monitor desk
+  the app hides all your screens, but it judges "is this gaze pointing at my
+  screen?" against the primary one only. Someone reading your *second* monitor
+  from an angle the primary-screen model does not cover may not trigger masking.
+- Camera position matters too: `camera_above_screen_mm` assumes the webcam sits
+  above the screen it is modelling. An external webcam parked elsewhere makes the
+  geometry wrong in ways no default can guess.
+
 ## Idle back-off specifics
 
 - **When nobody has been in front of the camera for a while** (30 s by default),

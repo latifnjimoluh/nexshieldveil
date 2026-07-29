@@ -122,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         return 1
 
     from privacy_guard.ui import autostart
+    from privacy_guard.ui.calibrate import apply_detected_screen_size
     from privacy_guard.ui.core_controller import CoreController
     from privacy_guard.ui.fonts import load_bundled_fonts
     from privacy_guard.ui.i18n_catalog import normalize_language
@@ -155,6 +156,12 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     app.setApplicationName("NexShieldVeil")
     app.setQuitOnLastWindowClosed(False)  # tray app: closing a window must not quit
     load_bundled_fonts()
+
+    # AM-10: model the screen we are actually on. The default (520x290 mm) is a
+    # 24" panel; on a 13" laptop it is nearly four times too large, which makes
+    # the gaze test far more permissive than the sensitivity slider claims.
+    # A size the user set explicitly in the TOML always wins over the probe.
+    config = apply_detected_screen_size(config, explicit=args.config is not None)
 
     settings = QSettings("NexShieldVeil", "NexShieldVeil")
     lang = normalize_language(str(settings.value("language", QLocale().name())))
