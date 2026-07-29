@@ -32,6 +32,9 @@ SNOOZE_MINUTES_RANGE = (1, 480)
 # every time the detector blinks. Mirrors PolicyConfig.absence_ms (<= 600_000).
 ABSENCE_LOCK_MS_RANGE = (3_000, 600_000)
 ABSENCE_LOCK_DEFAULT_MS = 10_000
+# EMA smoothing on the observer signal (AM-11). Mirrors TrackingConfig bounds
+# (0 < alpha <= 1); the UI slider only offers the useful upper half.
+SMOOTHING_ALPHA_RANGE = (0.1, 1.0)
 
 
 class ProtectionState(Enum):
@@ -156,6 +159,9 @@ class UiSnapshot:
     release_ms: int = 800
     # Walk-away lock (AM-7): mask after this long with no face at all. 0 = off.
     absence_lock_ms: int = 0
+    # EMA smoothing on the observer signal (AM-11): 1.0 = no smoothing, most
+    # reactive. Lower values cost latency ON TOP of trigger_ms.
+    smoothing_alpha: float = 0.4
     camera_index: int = 0
     start_at_login: bool = False
     # UI-only: whether the live camera preview (what the camera sees + detections) is
@@ -239,6 +245,20 @@ def primary_action_label_key(snapshot: UiSnapshot) -> str:
     if snapshot.error_kind is not None and snapshot.running:
         return f"error.{snapshot.error_kind.value}.action"
     return "action.resume" if not snapshot.running else "action.pause"
+
+
+def reactivity_key(alpha: float) -> str:
+    """Language-neutral bucket for the EMA smoothing factor.
+
+    Users think in "how fast does it react", not in EMA coefficients.
+    """
+    if alpha >= 0.95:
+        return "instant"
+    if alpha >= 0.6:
+        return "fast"
+    if alpha >= 0.3:
+        return "balanced"
+    return "smooth"
 
 
 def sensitivity_key(tolerance_deg: float) -> str:

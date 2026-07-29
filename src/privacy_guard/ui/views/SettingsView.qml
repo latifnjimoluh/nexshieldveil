@@ -141,6 +141,30 @@ Item {
                     text: Tr.t("settings.absence_lock.hint")
                 }
 
+                FieldLabel { text: Tr.t("settings.reactivity") }
+                Row {
+                    width: parent.width
+                    spacing: Theme.space("md")
+                    Slider {
+                        objectName: "reactivitySlider"
+                        width: parent.width * 0.7
+                        from: settingsVM.smoothing_alpha_min; to: 1.0; stepSize: 0.05
+                        value: settingsVM.smoothing_alpha
+                        Accessible.name: Tr.t("settings.reactivity")
+                        onMoved: settingsVM.set_smoothing_alpha(value)
+                    }
+                    ValueLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: settingsVM.reactivity_caption
+                    }
+                }
+                FieldLabel {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Theme.fontSize("caption")
+                    text: Tr.t("settings.reactivity.hint")
+                }
+
                 FieldLabel {
                     width: parent.width
                     wrapMode: Text.WordWrap

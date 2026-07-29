@@ -189,3 +189,18 @@ def test_mask_reason_is_mapped_onto_the_snapshot(qapp, reason, expected) -> None
     )
     controller.apply_frame_result(result)
     assert controller.snapshot.mask_reason == expected
+
+
+def test_smoothing_alpha_reaches_the_worker_config() -> None:
+    # AM-11: `tracking` was missing from this merge, so the smoothing the user
+    # could see in the config never reached the pipeline at all.
+    snap = UiSnapshot(smoothing_alpha=1.0)
+    assert app_config_from_snapshot(AppConfig(), snap).tracking.smoothing_alpha == 1.0
+
+
+def test_snapshot_from_config_mirrors_the_smoothing() -> None:
+    cfg = AppConfig()
+    cfg = cfg.model_copy(
+        update={"tracking": cfg.tracking.model_copy(update={"smoothing_alpha": 0.75})}
+    )
+    assert snapshot_from_config(cfg).smoothing_alpha == 0.75

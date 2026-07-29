@@ -67,6 +67,9 @@ class SettingsSink(Protocol):
     def set_absence_lock_ms(self, ms: int) -> None:  # noqa: D102
         ...
 
+    def set_smoothing_alpha(self, alpha: float) -> None:  # noqa: D102
+        ...
+
     def set_start_at_login(self, value: bool) -> None:  # noqa: D102
         ...
 
@@ -120,6 +123,7 @@ _FIELDS: tuple[tuple[str, Callable[[object], object | None], str], ...] = (
     ("trigger_ms", _as_int, "set_trigger_ms"),
     ("release_ms", _as_int, "set_release_ms"),
     ("absence_lock_ms", _as_int, "set_absence_lock_ms"),
+    ("smoothing_alpha", _as_float, "set_smoothing_alpha"),
     ("start_at_login", _as_bool, "set_start_at_login"),
 )
 

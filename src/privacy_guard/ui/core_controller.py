@@ -24,6 +24,7 @@ from privacy_guard.config import (
     GeometryConfig,
     MaskingConfig,
     PolicyConfig,
+    TrackingConfig,
 )
 from privacy_guard.ui.controller import AppController
 from privacy_guard.ui.state import CameraError, UiSnapshot
@@ -43,6 +44,7 @@ def snapshot_from_config(config: AppConfig) -> UiSnapshot:
         trigger_ms=config.policy.trigger_ms,
         release_ms=config.policy.release_ms,
         absence_lock_ms=config.policy.absence_ms,
+        smoothing_alpha=config.tracking.smoothing_alpha,
         camera_index=config.camera.device_index,
     )
 
@@ -82,6 +84,9 @@ def app_config_from_snapshot(config: AppConfig, snapshot: UiSnapshot) -> AppConf
                 release_ms=snapshot.release_ms,
                 absence_ms=snapshot.absence_lock_ms,
             ),
+            # AM-11: tracking was missing here, so the smoothing the user sees
+            # never reached the worker at all.
+            "tracking": TrackingConfig(smoothing_alpha=snapshot.smoothing_alpha),
             "masking": masking_config_from_snapshot(snapshot),
         }
     )
@@ -360,6 +365,11 @@ class CoreController(AppController):
     def set_absence_lock_ms(self, ms: int) -> None:  # pragma: no cover - hardware
         """Change the walk-away lock and (debounced) apply it to the live pipeline."""
         super().set_absence_lock_ms(ms)
+        self._schedule_worker_restart()
+
+    def set_smoothing_alpha(self, alpha: float) -> None:  # pragma: no cover - hardware
+        """Change the EMA smoothing and (debounced) apply it to the live pipeline."""
+        super().set_smoothing_alpha(alpha)
         self._schedule_worker_restart()
 
     # ---- masking edits take effect live on the overlay ------------------- #

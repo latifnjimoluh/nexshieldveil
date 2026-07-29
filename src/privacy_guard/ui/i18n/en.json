@@ -125,5 +125,11 @@
   "settings.absence_lock": "Hide when I step away",
   "settings.absence_lock.hint": "Hides the screen when no face has been seen for this long. NexShieldVeil recognises no one: it reacts to absence, not to who comes back.",
   "settings.absence_lock.delay": "Absence delay",
-  "unit.s": "{value} s"
+  "unit.s": "{value} s",
+  "settings.reactivity": "Reactivity",
+  "settings.reactivity.hint": "More reactive: the veil arrives sooner, but a head movement can be enough to trigger it. Smoother: fewer false positives, at the cost of a delay that adds to the masking delay.",
+  "reactivity.instant": "instant (no smoothing)",
+  "reactivity.fast": "fast",
+  "reactivity.balanced": "balanced",
+  "reactivity.smooth": "smooth"
 }

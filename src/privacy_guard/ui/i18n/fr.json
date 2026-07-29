@@ -125,5 +125,11 @@
   "settings.absence_lock": "Masquer quand je m'éloigne",
   "settings.absence_lock.hint": "Masque l'écran si plus aucun visage n'est vu pendant ce délai. NexShieldVeil ne reconnaît personne : il réagit à l'absence, pas à qui revient.",
   "settings.absence_lock.delay": "Délai d'absence",
-  "unit.s": "{value} s"
+  "unit.s": "{value} s",
+  "settings.reactivity": "Réactivité",
+  "settings.reactivity.hint": "Plus réactif : le voile arrive plus vite, mais un mouvement de tête suffit parfois à le déclencher. Plus lissé : moins de faux positifs, au prix d'un délai qui s'ajoute au délai avant masquage.",
+  "reactivity.instant": "immédiat (aucun lissage)",
+  "reactivity.fast": "rapide",
+  "reactivity.balanced": "équilibré",
+  "reactivity.smooth": "lissé"
 }

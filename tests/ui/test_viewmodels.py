@@ -457,3 +457,41 @@ def test_the_absence_delay_is_clamped_to_a_sane_floor(qapp) -> None:
     assert controller.snapshot.absence_lock_ms == ABSENCE_LOCK_MS_RANGE[0]
     controller.set_absence_lock_ms(99_999_999)
     assert controller.snapshot.absence_lock_ms == ABSENCE_LOCK_MS_RANGE[1]
+
+
+# --------------------------------------------------------------------------- #
+# reactivity (AM-11): the EMA that silently added latency is now adjustable
+# --------------------------------------------------------------------------- #
+def test_reactivity_caption_describes_the_smoothing_in_plain_words(qapp) -> None:
+    from privacy_guard.ui.state import reactivity_key
+
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    for alpha, expected in [(1.0, "instant"), (0.7, "fast"), (0.4, "balanced"), (0.15, "smooth")]:
+        assert reactivity_key(alpha) == expected
+        controller.set_smoothing_alpha(alpha)
+        assert vm.property("reactivity_caption")
+        assert "reactivity." not in vm.property("reactivity_caption")  # a real translation
+
+
+def test_smoothing_alpha_edits_forward_and_clamp(qapp) -> None:
+    from privacy_guard.ui.state import SMOOTHING_ALPHA_RANGE
+
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_smoothing_alpha(1.0)
+    assert controller.snapshot.smoothing_alpha == 1.0
+    controller.set_smoothing_alpha(0.0)  # would be an invalid EMA factor
+    assert controller.snapshot.smoothing_alpha == SMOOTHING_ALPHA_RANGE[0]
+    controller.set_smoothing_alpha(5.0)
+    assert controller.snapshot.smoothing_alpha == SMOOTHING_ALPHA_RANGE[1]
+
+
+def test_the_clamped_smoothing_always_builds_a_valid_config(qapp) -> None:
+    # The clamp must stay inside TrackingConfig's (0, 1] bounds, or a restored
+    # setting would crash the worker instead of degrading.
+    from privacy_guard.config import TrackingConfig
+    from privacy_guard.ui.state import SMOOTHING_ALPHA_RANGE
+
+    for alpha in SMOOTHING_ALPHA_RANGE:
+        assert TrackingConfig(smoothing_alpha=alpha).smoothing_alpha == alpha

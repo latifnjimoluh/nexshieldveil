@@ -27,6 +27,7 @@ from privacy_guard.ui.state import (
     BLUR_RADIUS_RANGE,
     PIXELATE_BLOCKS_RANGE,
     SENSITIVITY_DEG_RANGE,
+    SMOOTHING_ALPHA_RANGE,
     SNOOZE_MINUTES_RANGE,
     CameraError,
     UiSnapshot,
@@ -97,6 +98,7 @@ class AppController(QObject):
             "trigger_ms",
             "release_ms",
             "absence_lock_ms",
+            "smoothing_alpha",
             "camera_index",
             "start_at_login",
         )
@@ -155,6 +157,9 @@ class AppController(QObject):
     def _get_absence_lock_ms(self) -> int:
         return self._snap.absence_lock_ms
 
+    def _get_smoothing_alpha(self) -> float:
+        return self._snap.smoothing_alpha
+
     def _get_start_at_login(self) -> bool:
         return self._snap.start_at_login
 
@@ -176,6 +181,7 @@ class AppController(QObject):
     release_ms = Property(int, _get_release_ms, notify=config_changed)
     camera_index = Property(int, _get_camera_index, notify=config_changed)
     absence_lock_ms = Property(int, _get_absence_lock_ms, notify=config_changed)
+    smoothing_alpha = Property(float, _get_smoothing_alpha, notify=config_changed)
     start_at_login = Property(bool, _get_start_at_login, notify=config_changed)
     preview_enabled = Property(bool, _get_preview_enabled, notify=preview_changed)
 
@@ -284,6 +290,17 @@ class AppController(QObject):
             return
         lo, hi = ABSENCE_LOCK_MS_RANGE
         self._update(absence_lock_ms=min(hi, max(lo, ms)))
+
+    @Slot(float)
+    def set_smoothing_alpha(self, alpha: float) -> None:
+        """Set the EMA smoothing on the observer signal, clamped to ``(0, 1]``.
+
+        Higher = more reactive (1.0 disables smoothing entirely). Lower trades
+        latency for fewer spurious triggers — and that latency adds to
+        ``trigger_ms``, which is exactly what AM-11 makes visible and adjustable.
+        """
+        lo, hi = SMOOTHING_ALPHA_RANGE
+        self._update(smoothing_alpha=min(hi, max(lo, float(alpha))))
 
     @Slot(int)
     def select_camera(self, index: int) -> None:

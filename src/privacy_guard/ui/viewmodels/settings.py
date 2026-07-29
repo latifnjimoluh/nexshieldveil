@@ -15,6 +15,8 @@ from privacy_guard.ui.controller import AppController
 from privacy_guard.ui.state import (
     ABSENCE_LOCK_DEFAULT_MS,
     ABSENCE_LOCK_MS_RANGE,
+    SMOOTHING_ALPHA_RANGE,
+    reactivity_key,
     sensitivity_key,
 )
 from privacy_guard.ui.translator import Translator
@@ -76,6 +78,16 @@ class SettingsViewModel(QObject):
 
     def _get_absence_lock_min_ms(self) -> int:
         return ABSENCE_LOCK_MS_RANGE[0]
+
+    # ---- reactivity (AM-11): the EMA that silently added masking latency --- #
+    def _get_smoothing_alpha(self) -> float:
+        return self._c.snapshot.smoothing_alpha
+
+    def _get_smoothing_alpha_min(self) -> float:
+        return SMOOTHING_ALPHA_RANGE[0]
+
+    def _get_reactivity_caption(self) -> str:
+        return self._tr.tr_key(f"reactivity.{reactivity_key(self._c.snapshot.smoothing_alpha)}")
 
     # ---- masking --------------------------------------------------------- #
     def _get_opacity(self) -> float:
@@ -145,6 +157,9 @@ class SettingsViewModel(QObject):
     absence_lock_ms = Property(int, _get_absence_lock_ms, notify=changed)
     absence_lock_caption = Property(str, _get_absence_lock_caption, notify=changed)
     absence_lock_min_ms = Property(int, _get_absence_lock_min_ms, notify=changed)
+    smoothing_alpha = Property(float, _get_smoothing_alpha, notify=changed)
+    smoothing_alpha_min = Property(float, _get_smoothing_alpha_min, notify=changed)
+    reactivity_caption = Property(str, _get_reactivity_caption, notify=changed)
     opacity = Property(float, _get_opacity, notify=changed)
     masking_strategy = Property(str, _get_masking_strategy, notify=changed)
     masking_options = Property("QVariantList", _get_masking_options, notify=changed)
@@ -182,6 +197,11 @@ class SettingsViewModel(QObject):
         """Change the walk-away delay (ignored while the lock is off)."""
         if self._c.snapshot.absence_lock_ms > 0:
             self._c.set_absence_lock_ms(int(ms))
+
+    @Slot(float)
+    def set_smoothing_alpha(self, alpha: float) -> None:
+        """Update the smoothing/reactivity trade-off."""
+        self._c.set_smoothing_alpha(alpha)
 
     @Slot(int)
     def set_release_ms(self, ms: int) -> None:
