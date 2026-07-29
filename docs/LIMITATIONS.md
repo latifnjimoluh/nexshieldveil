@@ -41,6 +41,16 @@ and hide the content.** This implies the limits below.
   blank or failed capture — the app then falls back to the **opaque veil**, so
   protection never silently drops to "nothing".
 
+## Idle back-off specifics
+
+- **When nobody has been in front of the camera for a while** (30 s by default),
+  the capture rate drops to 5 fps to spare CPU and battery. A person appearing
+  is then noticed up to one idle frame later (~200 ms), which is added to the
+  masking delay — that is a floor on how fast the app *starts* reacting, never
+  on how fast it reacts once someone is there: a single detected face restores
+  the full rate immediately.
+- Set `camera.idle_after_ms = 0` to keep the full rate at all times.
+
 ## Walk-away lock specifics
 
 - **It reacts to absence, not to identity.** When enabled, the screen hides after

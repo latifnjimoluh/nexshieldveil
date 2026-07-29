@@ -32,6 +32,17 @@ class CameraConfig(_StrictModel):
         le=3840,
         description="Frames are downscaled to this width before vision.",
     )
+    idle_fps: int = Field(
+        default=5,
+        ge=1,
+        le=120,
+        description="Reduced rate used once nobody has been in front of the camera for a while.",
+    )
+    idle_after_ms: int = Field(
+        default=30_000,
+        ge=0,
+        description="Empty-frame duration before backing off to idle_fps. 0 keeps the full rate.",
+    )
 
 
 class DetectionConfig(_StrictModel):

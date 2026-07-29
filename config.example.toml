@@ -7,6 +7,11 @@ enabled = true
 device_index = 0       # which webcam to use
 target_fps = 15
 downscale_width = 640  # frames downscaled to this width before vision (speed)
+# Idle back-off: once nobody has been in front of the camera for idle_after_ms,
+# the loop drops to idle_fps to spare CPU/battery. A face restores the full rate
+# immediately. Set idle_after_ms = 0 to always run at target_fps.
+idle_fps = 5
+idle_after_ms = 30000
 
 [detection]
 # Local path to the MediaPipe Face Landmarker model. No auto-download ever.

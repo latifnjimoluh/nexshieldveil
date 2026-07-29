@@ -133,10 +133,12 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
             self.failed.emit(CameraError.RECONNECTING.value)
 
     def run(self) -> None:
+        import time
         from pathlib import Path
 
         from privacy_guard.app import PrivacyGuardPipeline
         from privacy_guard.capture import (
+            AdaptiveCadence,
             DownscaledFrameSource,
             ResilientFrameSource,
             WebcamFrameSource,
@@ -187,15 +189,28 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
             on_result=self.produced.emit,
             on_step_detail=self._emit_detail,
         )
+        # Deadline pacing + idle back-off (AM-13): the sleep absorbs the
+        # processing time instead of adding to it, and the rate drops once
+        # nobody has been in front of the camera for a while.
+        cadence = AdaptiveCadence(
+            target_fps=self._config.camera.target_fps,
+            idle_fps=self._config.camera.idle_fps,
+            idle_after_ms=self._config.camera.idle_after_ms,
+        )
         try:
             while not self._stop:
-                if pipeline.step() is None:
+                started = time.monotonic()
+                result = pipeline.step()
+                if result is None:
                     # With the resilient source this only happens on stop/close;
                     # the guard keeps a real exhaustion visible rather than silent.
                     if not self._stop:
                         self.failed.emit(CameraError.DISCONNECTED.value)
                     break
-                self.msleep(int(1000 / max(1, self._config.camera.target_fps)))
+                now_ms = time.monotonic() * 1000.0
+                cadence.observe(now_ms=now_ms, faces_count=result.n_faces, masked=result.is_masked)
+                work_ms = (time.monotonic() - started) * 1000.0
+                self.msleep(int(cadence.sleep_ms(work_ms)))
         finally:
             pipeline.close()
 

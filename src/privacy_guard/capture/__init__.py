@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from privacy_guard.capture.cadence import AdaptiveCadence
 from privacy_guard.capture.downscale import (
     DownscaledFrameSource,
     default_resizer,
@@ -21,6 +22,7 @@ from privacy_guard.capture.resilience import (
 )
 
 __all__ = [
+    "AdaptiveCadence",
     "DownscaledFrameSource",
     "Frame",
     "FrameSource",

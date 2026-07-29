@@ -119,6 +119,8 @@ module = [
     "privacy_guard.capture.resilience",
     # Pure frame-downscaling logic (AM-12).
     "privacy_guard.capture.downscale",
+    # Pure frame-pacing logic (AM-13).
+    "privacy_guard.capture.cadence",
     # Pure autostart planning + its thin OS adapters (AM-1).
     "privacy_guard.ui.autostart",
 ]
