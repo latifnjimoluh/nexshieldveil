@@ -25,11 +25,10 @@ from privacy_guard.geometry import (
     ScreenModel,
     gaze_points_at_screen,
     gaze_vector,
-    select_primary_user,
 )
 from privacy_guard.overlay import RecordingRenderer, Renderer
 from privacy_guard.policy import DecisionStateMachine, PolicyState
-from privacy_guard.tracking import ExponentialSmoother
+from privacy_guard.tracking import ExponentialSmoother, PrimaryUserSelector
 from privacy_guard.vision import FaceDetector, FaceObservation
 
 logger = logging.getLogger("privacy_guard")
@@ -97,6 +96,16 @@ class PrivacyGuardPipeline:
             camera_above_mm=config.geometry.camera_above_screen_mm,
         )
         self._tolerance = config.geometry.gaze_tolerance_deg
+        # Stateful across frames (AM-8): the primary user keeps the title unless a
+        # challenger sustains a clear lead, so two people side by side stop
+        # swapping it — and with it, whose gaze gets ignored.
+        self._primary = PrimaryUserSelector(
+            centrality_weight=config.primary_user.centrality_weight,
+            size_weight=config.primary_user.size_weight,
+            margin=config.primary_user.switch_margin,
+            patience=config.primary_user.switch_patience,
+            match_distance=config.primary_user.match_distance,
+        )
         self._smoother = ExponentialSmoother(config.tracking.smoothing_alpha)
         self._policy = DecisionStateMachine.from_config(config.policy)
         self.last_result: FrameResult | None = None
@@ -122,14 +131,13 @@ class PrivacyGuardPipeline:
         is the primary user); the preview uses it to tag faces.
         """
         if not observations:
+            # Tell the selector the frame is empty so it drops its incumbent
+            # instead of matching a stale position when someone walks back in.
+            self._primary.update([])
             return False, None, []
         looking = [self._observer_is_looking(obs) for obs in observations]
         candidates = [o.to_candidate() for o in observations]
-        primary_index = select_primary_user(
-            candidates,
-            centrality_weight=self.config.primary_user.centrality_weight,
-            size_weight=self.config.primary_user.size_weight,
-        )
+        primary_index = self._primary.update(candidates)
         observer_present = any(hit for i, hit in enumerate(looking) if i != primary_index)
         return observer_present, primary_index, looking
 

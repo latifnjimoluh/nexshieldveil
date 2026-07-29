@@ -137,6 +137,30 @@ def gaze_points_at_screen(
     return angle_between(gaze_dir, to_target) <= tolerance_deg
 
 
+def primary_user_scores(
+    faces: list[FaceCandidate],
+    centrality_weight: float = 1.0,
+    size_weight: float = 1.0,
+) -> list[float]:
+    """Score each face on "how much does this look like the primary user?".
+
+    The score combines being central in the frame and being large (i.e. close to
+    the camera). It identifies *nobody*: it is pure image geometry.
+
+    Exposed separately from :func:`select_primary_user` because the election
+    hysteresis (:mod:`privacy_guard.tracking.primary`) needs the margin between
+    the incumbent and its challenger, not just the winner.
+    """
+    # Max possible distance from centre in normalized space is the half-diagonal.
+    max_dist = math.hypot(0.5, 0.5)
+    scores: list[float] = []
+    for face in faces:
+        dist = math.hypot(face.center_x - 0.5, face.center_y - 0.5)
+        centrality = 1.0 - (dist / max_dist)
+        scores.append(centrality_weight * centrality + size_weight * face.size)
+    return scores
+
+
 def select_primary_user(
     faces: list[FaceCandidate],
     centrality_weight: float = 1.0,
@@ -146,6 +170,11 @@ def select_primary_user(
 
     The primary user is the face that best combines being central in the frame and
     being large (i.e. close to the camera). This never identifies *who* a face is.
+
+    Single-frame only: it has no memory, so two similarly-scored faces can swap the
+    title from one frame to the next. The pipeline therefore goes through
+    :class:`~privacy_guard.tracking.primary.PrimaryUserSelector`, which adds the
+    temporal hysteresis.
 
     Args:
         faces: Non-empty list of face candidates in normalized image space.
@@ -162,14 +191,10 @@ def select_primary_user(
         msg = "Cannot select a primary user from an empty face list"
         raise ValueError(msg)
 
+    scores = primary_user_scores(faces, centrality_weight, size_weight)
     best_idx = 0
     best_score = -math.inf
-    # Max possible distance from centre in normalized space is the half-diagonal.
-    max_dist = math.hypot(0.5, 0.5)
-    for idx, face in enumerate(faces):
-        dist = math.hypot(face.center_x - 0.5, face.center_y - 0.5)
-        centrality = 1.0 - (dist / max_dist)
-        score = centrality_weight * centrality + size_weight * face.size
+    for idx, score in enumerate(scores):
         if score > best_score:
             best_score = score
             best_idx = idx

@@ -91,10 +91,33 @@ class PolicyConfig(_StrictModel):
 
 
 class PrimaryUserConfig(_StrictModel):
-    """How the primary user is distinguished from other faces."""
+    """How the primary user is distinguished from other faces.
+
+    The election also has *temporal* hysteresis (AM-8): whoever holds the title
+    keeps it unless a challenger scores better by ``switch_margin`` for
+    ``switch_patience`` consecutive frames. Without it, two people at comparable
+    distance swap the title on a micro-movement — and the title decides whose
+    gaze is ignored, so each swap inverts the decision.
+    """
 
     centrality_weight: float = Field(default=1.0, ge=0.0)
     size_weight: float = Field(default=1.0, ge=0.0)
+    switch_margin: float = Field(
+        default=0.08,
+        ge=0.0,
+        description="Score lead a challenger needs before a switch is even considered.",
+    )
+    switch_patience: int = Field(
+        default=3,
+        ge=1,
+        description="Consecutive frames the challenger must keep that lead (1 = no memory).",
+    )
+    match_distance: float = Field(
+        default=0.15,
+        gt=0.0,
+        le=1.0,
+        description="Max normalised distance at which a face is deemed the same one as last frame.",
+    )
 
 
 class MaskingConfig(_StrictModel):

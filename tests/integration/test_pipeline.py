@@ -191,3 +191,44 @@ def test_on_result_hook_is_called_per_frame() -> None:
     pipeline.run()
     assert seen == [0, 1, 2, 3, 4]
     assert pipeline.last_result is not None
+
+
+# --------------------------------------------------------------------------- #
+# AM-8: two people side by side must not make the decision oscillate
+# --------------------------------------------------------------------------- #
+def _twin(center_x: float, size: float, yaw_deg: float) -> FaceObservation:
+    """One of two people sitting side by side, equidistant from the camera."""
+    return FaceObservation(
+        center_x=center_x,
+        center_y=0.5,
+        size=size,
+        position_mm=np.array([(center_x - 0.5) * 800.0, -150.0, 600.0]),
+        yaw_deg=yaw_deg,
+        pitch_deg=0.0,
+    )
+
+
+def test_two_tied_faces_do_not_flip_the_masking_decision() -> None:
+    # Both look at the screen and are nearly tied on score, with the tiny size
+    # difference changing sign every frame (breathing, leaning). Whoever holds
+    # the "primary user" title has their gaze ignored — so a title that flips
+    # makes the veil flicker on and off. It must not.
+    jitter = [0.002, -0.002, 0.001, -0.001, 0.003, -0.003] * 5
+    script = [[_twin(0.45, 0.20 + d, 0.0), _twin(0.55, 0.20 - d, 0.0)] for d in jitter]
+    results, _ = run_script(script)
+
+    primaries = {r.primary_index for r in results}
+    assert len(primaries) == 1, f"the primary user changed hands: {primaries}"
+    # ...and with a stable primary, the other one is consistently an observer.
+    assert all(r.observer_present for r in results[1:])
+
+
+def test_a_real_move_still_transfers_the_primary_title() -> None:
+    # Hysteresis must not freeze the election: someone who genuinely takes the
+    # front seat (much closer, much more central) does become the primary user.
+    script = [[_twin(0.5, 0.30, 0.0), _twin(0.9, 0.05, 70.0)] for _ in range(4)]
+    script += [[_twin(0.5, 0.05, 0.0), _twin(0.55, 0.45, 70.0)] for _ in range(8)]
+    results, _ = run_script(script)
+
+    assert results[0].primary_index == 0
+    assert results[-1].primary_index == 1
