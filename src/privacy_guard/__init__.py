@@ -8,4 +8,4 @@ the *direction* in which light leaves the panel. It only reduces risk by detecti
 an observer with the camera and masking content. It does not guarantee invisibility.
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"

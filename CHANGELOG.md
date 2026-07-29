@@ -7,6 +7,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 Rappel de périmètre, valable pour toutes les versions : NexShieldVeil **réduit** le
 risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
+## [0.3.4] — 2026-07-29
+
+### Corrigé
+- Icône de l'application et du programme d'installation enfin visible : le logo
+  « verre dépoli », très translucide, disparaissait quasiment en icône OS à petite
+  taille (16–48 px) sur le fond clair de l'Explorateur — le `.exe`, le `Setup.exe`
+  et la barre des tâches paraissaient sans logo. L'icône est désormais une tuile
+  arrondie opaque aux couleurs de la marque (ardoise + liseré aqua) portant le
+  bouclier solidifié, lisible à toutes les tailles sur n'importe quel fond.
+
 ## [0.3.3] — 2026-07-29
 
 ### Ajouté

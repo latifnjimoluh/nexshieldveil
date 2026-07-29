@@ -3,10 +3,11 @@
 Reads the two hand-made logos under ``assets/branding/source/`` and produces the
 files the app and installer actually load:
 
-* ``icon.png``  — the shield mark, trimmed to its content, centred on a square
-  transparent canvas with a small margin (a clean app / tray / window icon).
-* ``icon.ico``  — the same mark at every size Windows asks for (Explorer, the
-  taskbar, the .exe resource, the Inno installer).
+* ``icon.png``  — the app icon: the mark on an opaque rounded slate tile so it
+  stays legible at 16-48px on any background (the bare frosted mark vanishes on
+  the light Explorer background). Used for the window / tray / taskbar icon.
+* ``icon.ico``  — the same tile at every size Windows asks for (Explorer, the
+  taskbar, the .exe resource, and the Setup.exe / installer icon).
 * ``wordmark.png`` — the horizontal lockup (shield + name), trimmed to content,
   for the About and onboarding screens.
 * ``wizard_large.bmp`` / ``wizard_small.bmp`` — the Inno Setup installer wizard
@@ -23,7 +24,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 
 _BRANDING = (
     Path(__file__).resolve().parent.parent / "src" / "privacy_guard" / "ui" / "assets" / "branding"
@@ -34,11 +35,20 @@ _SOURCE = _BRANDING / "source"
 # the 16px taskbar tray up to the 256px Explorer tile.
 _ICO_SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
 _ICON_CANVAS = 512  # master PNG side length
-_ICON_MARGIN = 0.12  # fraction of the canvas kept clear around the mark
 
-# The brand slate (Theme `base`) the logo is designed to sit on — the frosted
-# glass mark reads far better on it than on Inno's default blue/white wizard.
+# Brand colours (from docs/DESIGN_TOKENS.md): the slate the logo sits on, the
+# slightly lighter panel, and the single aqua accent.
 _SLATE = (0x13, 0x16, 0x1B)
+_PANEL = (0x24, 0x2B, 0x36)
+_ACCENT = (0x74, 0xC7, 0xD6)
+
+# The mark is deliberately frosted-glass (translucent, low-contrast) — gorgeous at
+# hero size, but as a bare OS icon it nearly vanishes at 16-48px on the light
+# Explorer background. So the app/installer icon is a *tile*: an opaque rounded
+# slate square (visible on any background) with the mark solidified on top.
+_ICON_SUPERSAMPLE = 4  # render big, downscale — keeps small sizes crisp
+_MARK_FILL = 0.66  # mark size as a fraction of the tile
+_ALPHA_BOOST = 2.4  # kills the frosted translucency so the mark reads solid
 
 # Inno Setup wizard images (modern style). Both are BMP with no alpha; Inno scales
 # the source down for higher DPI, so we author at the largest documented size.
@@ -53,17 +63,57 @@ def _trim_to_content(image: Image.Image) -> Image.Image:
     return image.crop(bbox) if bbox else image
 
 
-def _square_icon(source: Image.Image, canvas: int, margin: float) -> Image.Image:
-    """Centre the trimmed mark on a square transparent canvas with a margin."""
-    mark = _trim_to_content(source)
-    inner = int(canvas * (1 - 2 * margin))
-    scale = min(inner / mark.width, inner / mark.height)
-    mark = mark.resize(
-        (max(1, round(mark.width * scale)), max(1, round(mark.height * scale))), Image.LANCZOS
+def _solidify(mark: Image.Image, boost: float = _ALPHA_BOOST) -> Image.Image:
+    """Raise the alpha of visible pixels so the frosted mark reads solid at 16px."""
+    r, g, b, a = mark.split()
+    a = a.point(lambda v: min(255, int(v * boost)))
+    return Image.merge("RGBA", (r, g, b, a))
+
+
+def _rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
+    mask = Image.new("L", size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, size[0] - 1, size[1] - 1], radius=radius, fill=255
     )
-    out = Image.new("RGBA", (canvas, canvas), (0, 0, 0, 0))
-    out.paste(mark, ((canvas - mark.width) // 2, (canvas - mark.height) // 2), mark)
-    return out
+    return mask
+
+
+def _icon_tile(source: Image.Image, canvas: int) -> Image.Image:
+    """A rounded slate tile with the solidified mark — a legible OS app icon."""
+    s = canvas * _ICON_SUPERSAMPLE
+
+    # Vertical panel->slate gradient for a little depth.
+    tile = Image.new("RGBA", (s, s))
+    for y in range(s):
+        t = y / s
+        col = tuple(int(_PANEL[i] * (1 - t) + _SLATE[i] * t) for i in range(3))
+        tile.paste((*col, 255), [0, y, s, y + 1])
+
+    # Soft aqua halo behind the mark, so the dark upper half of the shield lifts
+    # off the dark tile instead of blending into it.
+    halo = Image.new("L", (s, s), 0)
+    ImageDraw.Draw(halo).ellipse([s * 0.18, s * 0.16, s * 0.82, s * 0.84], fill=70)
+    halo = halo.filter(ImageFilter.GaussianBlur(s * 0.08))
+    glow = Image.new("RGBA", (s, s), (*_ACCENT, 0))
+    glow.putalpha(halo)
+    tile = Image.alpha_composite(tile, glow)
+
+    # The solidified mark, centred.
+    mark = _solidify(_trim_to_content(source))
+    target = int(s * _MARK_FILL)
+    scale = target / max(mark.width, mark.height)
+    mark = mark.resize((round(mark.width * scale), round(mark.height * scale)), Image.LANCZOS)
+    tile.alpha_composite(mark, ((s - mark.width) // 2, (s - mark.height) // 2))
+
+    # A thin accent edge, then clip to rounded corners.
+    radius = int(s * 0.22)
+    ImageDraw.Draw(tile).rounded_rectangle(
+        [2, 2, s - 3, s - 3], radius=radius, outline=(*_ACCENT, 120), width=max(2, s // 64)
+    )
+    tile.putalpha(
+        Image.composite(tile.split()[3], Image.new("L", (s, s), 0), _rounded_mask((s, s), radius))
+    )
+    return tile.resize((canvas, canvas), Image.LANCZOS)
 
 
 def _wizard_bmp(mark: Image.Image, size: tuple[int, int], fill: float) -> Image.Image:
@@ -86,7 +136,7 @@ def main() -> int:
     icon_src = Image.open(_SOURCE / "icon.png")
     wordmark_src = Image.open(_SOURCE / "wordmark.png")
 
-    icon = _square_icon(icon_src, _ICON_CANVAS, _ICON_MARGIN)
+    icon = _icon_tile(icon_src, _ICON_CANVAS)
     icon.save(_BRANDING / "icon.png")
     icon.save(_BRANDING / "icon.ico", sizes=_ICO_SIZES)
 
