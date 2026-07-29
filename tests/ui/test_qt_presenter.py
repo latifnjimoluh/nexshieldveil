@@ -192,3 +192,51 @@ def test_renderer_veils_every_screen_and_tracks_state(qapp: QApplication) -> Non
     finally:
         renderer.close()
         qapp.processEvents()
+
+
+# --------------------------------------------------------------------------- #
+# panel copy: the veil covers the whole screen, so it must speak the user's
+# language rather than a hardcoded one (AM-2)
+# --------------------------------------------------------------------------- #
+def test_presenter_paints_the_caller_supplied_copy(qapp: QApplication) -> None:
+    presenter = QtMaskPresenter(title="Content hidden", subtitle="Someone is looking", fade_ms=0)
+    try:
+        presenter.show_veil()
+        for widget in presenter.widgets:
+            assert widget.title == "Content hidden"
+            assert widget.subtitle == "Someone is looking"
+    finally:
+        presenter.close()
+        qapp.processEvents()
+
+
+def test_masking_renderer_factory_forwards_the_copy(qapp: QApplication) -> None:
+    # The factory is a `pragma: no cover` adapter, so this reach-in is the only
+    # mechanical proof that translated labels actually land on the window.
+    renderer = build_qt_masking_renderer(
+        MaskingConfig(), fade_ms=0, title="Content hidden", subtitle="Someone is looking"
+    )
+    try:
+        renderer.set_masked(True)
+        presenter = renderer._compositor._presenter
+        assert [w.title for w in presenter.widgets] == ["Content hidden"] * len(qapp.screens())
+        assert [w.subtitle for w in presenter.widgets] == ["Someone is looking"] * len(
+            qapp.screens()
+        )
+    finally:
+        renderer.close()
+        qapp.processEvents()
+
+
+def test_default_copy_is_used_when_the_caller_supplies_none(qapp: QApplication) -> None:
+    # No translator (e.g. the headless CLI path): the fallback must still be a
+    # real sentence, never an empty panel.
+    presenter = QtMaskPresenter(fade_ms=0)
+    try:
+        presenter.show_veil()
+        for widget in presenter.widgets:
+            assert widget.title.strip()
+            assert widget.subtitle.strip()
+    finally:
+        presenter.close()
+        qapp.processEvents()

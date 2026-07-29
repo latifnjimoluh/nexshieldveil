@@ -13,6 +13,7 @@ is hardware-free and unit-tested.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from PySide6.QtCore import QObject, QThread, QTimer, Signal
 
@@ -202,16 +203,23 @@ class CoreController(AppController):
         model_path: str,
         parent: QObject | None = None,
         fade_ms: int = 120,
+        overlay_labels: Callable[[], tuple[str, str]] | None = None,
     ) -> None:
         """Initialise paused, mirroring ``config``; no hardware touched yet.
 
         ``fade_ms`` is the veil->frame crossfade for the overlay; the shell
         passes 0 when the user prefers reduced motion.
+
+        ``overlay_labels`` supplies the ``(title, subtitle)`` painted over the
+        mask. It is a callable, not two strings, because the language can change
+        at runtime and the overlay must follow (AM-2). Without it, the Qt
+        adapter's own fallbacks apply.
         """
         super().__init__(snapshot_from_config(config), parent)
         self._config = config
         self._model_path = model_path
         self._fade_ms = fade_ms
+        self._overlay_labels = overlay_labels
         self._worker: _PipelineWorker | None = None
         self._overlay: object | None = None
         # Detection-threshold edits restart the worker (the pipeline reads them at
@@ -239,6 +247,21 @@ class CoreController(AppController):
     def report_worker_error(self, error_value: str) -> None:
         """Map a worker error code to the snapshot's error state."""
         self._update(error_kind=CameraError(error_value), camera_active=False)
+
+    def overlay_labels(self) -> tuple[str, str] | None:
+        """The ``(title, subtitle)`` for the mask panel, or ``None`` to use defaults.
+
+        Hardware-free and unit-tested: a provider that raises must never take the
+        overlay down with it — the masking matters far more than its caption.
+        """
+        if self._overlay_labels is None:
+            return None
+        try:
+            title, subtitle = self._overlay_labels()
+        except Exception:
+            logger.warning("Overlay label provider failed; using defaults.", exc_info=True)
+            return None
+        return (str(title), str(subtitle))
 
     # ---- lifecycle (hardware; excluded from coverage) ------------------- #
     def enable(self) -> None:  # pragma: no cover - requires camera/model/display
@@ -285,11 +308,18 @@ class CoreController(AppController):
         if self._overlay is not None:
             was_masked = bool(self._overlay.is_masked)  # type: ignore[attr-defined]
             self._overlay.close()  # type: ignore[attr-defined]
+        labels = self.overlay_labels()
+        extra = {} if labels is None else {"title": labels[0], "subtitle": labels[1]}
         self._overlay = build_qt_masking_renderer(
-            masking_config_from_snapshot(self._snap), fade_ms=self._fade_ms
+            masking_config_from_snapshot(self._snap), fade_ms=self._fade_ms, **extra
         )
         if was_masked:
             self._overlay.set_masked(True)  # type: ignore[attr-defined]
+
+    def refresh_overlay_labels(self) -> None:  # pragma: no cover - display
+        """Re-read the overlay copy (called when the user switches language)."""
+        if self._overlay is not None:
+            self._rebuild_overlay()
 
     # ---- detection edits reach the pipeline via a debounced worker restart -- #
     def _apply_detection_settings(self) -> None:  # pragma: no cover - hardware

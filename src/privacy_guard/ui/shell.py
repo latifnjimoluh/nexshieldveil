@@ -153,7 +153,17 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
 
     # Reduced motion also disables the overlay's veil->frame crossfade (the
     # masking itself is never animated; only the cosmetic swap after it is).
-    controller = CoreController(config, model_path, fade_ms=0 if theme.reduced_motion else 120)
+    # The overlay copy comes from the translator, re-read on every rebuild, so
+    # the full-screen mask speaks the user's language (AM-2).
+    controller = CoreController(
+        config,
+        model_path,
+        fade_ms=0 if theme.reduced_motion else 120,
+        overlay_labels=lambda: (
+            translator.tr_key("overlay.title"),
+            translator.tr_key("overlay.subtitle"),
+        ),
+    )
 
     # M-R2: settings survive restarts. Restore BEFORE anything starts or binds
     # (the setters clamp/validate, so a corrupt store degrades to defaults),
@@ -172,6 +182,8 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     camera_vm = CameraViewModel(controller, translator, provider)
 
     translator.language_changed.connect(lambda: settings.setValue("language", translator.language))
+    # A language switch must reach the overlay too, not just the windows.
+    translator.language_changed.connect(controller.refresh_overlay_labels)
     # Live preview frames (emitted only while the preview is on) -> the camera VM.
     controller.frame_ready.connect(camera_vm.push_frame)
 

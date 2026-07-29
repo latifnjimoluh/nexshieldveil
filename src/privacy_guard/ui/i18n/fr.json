@@ -92,6 +92,8 @@
   "masking.blur": "Flou",
   "masking.pixelate": "Pixelisation",
   "masking.coming_soon": "bientôt",
+  "overlay.title": "Contenu masqué",
+  "overlay.subtitle": "Un observateur regarde ton écran",
 
   "sensitivity.strict": "strict",
   "sensitivity.balanced": "équilibré",

@@ -101,6 +101,30 @@ def test_limits_are_present_in_catalog() -> None:
         assert required <= keys, f"{lang} missing limitation keys: {sorted(required - keys)}"
 
 
+def test_overlay_copy_is_translated_not_hardcoded() -> None:
+    # The veil covers the whole screen: it is the LAST place that should ship a
+    # single hardcoded language (AM-2). Both keys must exist everywhere, and the
+    # two languages must actually differ — identical values would mean the
+    # English catalog was filled with the French sentence.
+    required = {"overlay.title", "overlay.subtitle"}
+    for lang in AVAILABLE_LANGUAGES:
+        assert required <= catalog_keys(lang), f"{lang} missing overlay keys"
+    fr, en = load_catalog("fr"), load_catalog("en")
+    for key in required:
+        assert fr[key] != en[key], f"{key} is identical in fr and en"
+
+
+def test_overlay_copy_matches_the_qt_fallbacks() -> None:
+    # The Qt adapter keeps its own last-resort strings for callers without a
+    # translator (the headless CLI). They must stay in sync with the FR catalog,
+    # or the two paths would word the same screen differently.
+    from privacy_guard.overlay import qt_overlay
+
+    fr = load_catalog("fr")
+    assert fr["overlay.title"] == qt_overlay._DEFAULT_TITLE
+    assert fr["overlay.subtitle"] == qt_overlay._DEFAULT_SUBTITLE
+
+
 def test_tagline_admits_a_limit() -> None:
     # The tagline must convey 'reduces, not removes' rather than a promise.
     assert re.search(r"sans le supprimer", load_catalog("fr")["about.tagline"])

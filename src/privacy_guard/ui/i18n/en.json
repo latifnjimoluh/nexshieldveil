@@ -92,6 +92,8 @@
   "masking.blur": "Blur",
   "masking.pixelate": "Pixelate",
   "masking.coming_soon": "soon",
+  "overlay.title": "Content hidden",
+  "overlay.subtitle": "Someone else is looking at your screen",
 
   "sensitivity.strict": "strict",
   "sensitivity.balanced": "balanced",

@@ -57,8 +57,13 @@ def qt_available() -> bool:
     return _QT_AVAILABLE
 
 
+# Last-resort fallbacks only. Every caller that has a Translator passes the
+# user's language down (AM-12/AM-2): the veil covers the whole screen, so
+# hardcoding one language here would show French to an English user at the very
+# moment they most need to understand what just happened. See
+# `ui/i18n/*.json` keys `overlay.title` / `overlay.subtitle`.
 _DEFAULT_TITLE = "Contenu masqué"
-_DEFAULT_SUBTITLE = "Un observateur regarde votre écran"
+_DEFAULT_SUBTITLE = "Un observateur regarde ton écran"
 # Short veil->frame crossfade. Callers pass 0 under the user's reduced-motion
 # setting (ThemeController.reduced_motion) — masking itself is never animated,
 # only the cosmetic swap that happens after protection is already up.
@@ -110,6 +115,17 @@ if _QT_AVAILABLE:  # pragma: no cover - requires a display (tested offscreen)
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
             self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+
+        # ---- panel copy (translated by the caller; asserted offscreen) ----- #
+        @property
+        def title(self) -> str:
+            """Headline painted on the lock panel."""
+            return self._title
+
+        @property
+        def subtitle(self) -> str:
+            """Explanatory line painted under the headline."""
+            return self._subtitle
 
         # ---- frame lifecycle (driven by QtMaskPresenter) ------------------ #
         @property
@@ -315,7 +331,10 @@ class QtMaskPresenter:  # pragma: no cover - Qt adapter (tested offscreen)
 
 
 def build_qt_masking_renderer(
-    masking: MaskingConfig, fade_ms: int = _DEFAULT_FADE_MS
+    masking: MaskingConfig,
+    fade_ms: int = _DEFAULT_FADE_MS,
+    title: str = _DEFAULT_TITLE,
+    subtitle: str = _DEFAULT_SUBTITLE,
 ) -> Renderer:  # pragma: no cover - Qt adapter (assembled pieces tested separately)
     """Build the full masking renderer for a ``MaskingConfig`` (M-FP5).
 
@@ -323,6 +342,9 @@ def build_qt_masking_renderer(
     ``pixelate`` -> freeze-frame stack: Qt screen grabber + off-thread transform
     + per-screen presenter. Must be called on the UI thread (the transform
     executor delivers its results back to the constructing thread).
+
+    ``title``/``subtitle`` are the panel copy shown over the mask; callers with a
+    translator pass the user's language (AM-2).
 
     Raises:
         RuntimeError: If PySide6 is unavailable.
@@ -332,7 +354,9 @@ def build_qt_masking_renderer(
     from privacy_guard.overlay.qt_executor import QtTransformExecutor
     from privacy_guard.overlay.qt_grabber import QtScreenGrabber
 
-    presenter = QtMaskPresenter(opacity=masking.opacity, fade_ms=fade_ms)
+    presenter = QtMaskPresenter(
+        opacity=masking.opacity, title=title, subtitle=subtitle, fade_ms=fade_ms
+    )
     strategy = None if masking.strategy == "veil" else make_mask_strategy(masking)
     compositor = FreezeFrameCompositor(
         grabber=QtScreenGrabber(),

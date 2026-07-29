@@ -110,3 +110,41 @@ def test_report_worker_error_sets_camera_error(qapp) -> None:
     assert ctrl.property("protection_state") == ProtectionState.CAMERA_ERROR.value
     assert ctrl.property("error_kind") == "no_camera"
     assert ctrl.property("camera_active") is False
+
+
+# --------------------------------------------------------------------------- #
+# overlay copy: supplied by the shell's translator, re-read on every rebuild
+# so a language switch reaches the full-screen mask too (AM-2)
+# --------------------------------------------------------------------------- #
+def test_overlay_labels_come_from_the_injected_provider() -> None:
+    lang = {"code": "fr"}
+    controller = CoreController(
+        AppConfig(),
+        "model.task",
+        overlay_labels=lambda: (
+            ("Contenu masqué", "Un observateur regarde ton écran")
+            if lang["code"] == "fr"
+            else ("Content hidden", "Someone else is looking at your screen")
+        ),
+    )
+    assert controller.overlay_labels() == ("Contenu masqué", "Un observateur regarde ton écran")
+    # Switching language must be reflected on the NEXT read, not frozen at build.
+    lang["code"] = "en"
+    assert controller.overlay_labels() == (
+        "Content hidden",
+        "Someone else is looking at your screen",
+    )
+
+
+def test_overlay_labels_are_none_without_a_provider() -> None:
+    # The headless/CLI path has no translator; the Qt adapter's own fallback applies.
+    assert CoreController(AppConfig(), "model.task").overlay_labels() is None
+
+
+def test_overlay_labels_survive_a_failing_provider() -> None:
+    # A caption is never worth losing the mask over.
+    def boom() -> tuple[str, str]:
+        raise RuntimeError("translator gone")
+
+    controller = CoreController(AppConfig(), "model.task", overlay_labels=boom)
+    assert controller.overlay_labels() is None
