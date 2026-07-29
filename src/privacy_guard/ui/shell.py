@@ -121,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         )
         return 1
 
+    from privacy_guard.ui import autostart
     from privacy_guard.ui.core_controller import CoreController
     from privacy_guard.ui.fonts import load_bundled_fonts
     from privacy_guard.ui.i18n_catalog import normalize_language
@@ -179,7 +180,26 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     # THEN autosave on every config change — order matters, or restoring would
     # immediately write back what it just read.
     restore_settings(controller, settings)
-    controller.config_changed.connect(lambda: save_settings(controller.snapshot, settings))
+
+    # AM-1: "start at login" is a real OS registration, not just a stored flag.
+    # Reality wins over what was persisted — if the user removed the login item by
+    # hand (or another install replaced it), the checkbox must show that.
+    controller.set_start_at_login(autostart.is_enabled())
+
+    def on_config_changed() -> None:
+        save_settings(controller.snapshot, settings)
+        wanted = controller.snapshot.start_at_login
+        if wanted == autostart.is_enabled():
+            return
+        actual = autostart.set_enabled(wanted)
+        if actual != wanted:
+            # A managed/locked-down session can refuse the write. Say so by
+            # putting the switch back where the machine actually is, rather than
+            # leaving the user believing in a protection that will not start.
+            logger.warning("Could not apply 'start at login'; reverting the switch to %s.", actual)
+            controller.set_start_at_login(actual)
+
+    controller.config_changed.connect(on_config_changed)
     app.aboutToQuit.connect(settings.sync)
 
     provider = CameraImageProvider()

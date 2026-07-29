@@ -391,3 +391,17 @@ def test_no_missing_translation_in_built_viewmodels(qapp) -> None:
         for text in texts:
             assert text, "empty translation"
             assert not looks_like_key.match(text), f"untranslated key leaked: {text}"
+
+
+# --------------------------------------------------------------------------- #
+# start at login: a switch that cannot act must not look active (AM-1)
+# --------------------------------------------------------------------------- #
+def test_start_at_login_support_follows_the_platform(qapp, monkeypatch) -> None:
+    from privacy_guard.ui import autostart
+    from privacy_guard.ui.viewmodels import SettingsViewModel
+
+    vm = SettingsViewModel(FakeController(), Translator("fr"))
+    monkeypatch.setattr(autostart, "is_supported", lambda: True)
+    assert vm.property("start_at_login_supported") is True
+    monkeypatch.setattr(autostart, "is_supported", lambda: False)
+    assert vm.property("start_at_login_supported") is False

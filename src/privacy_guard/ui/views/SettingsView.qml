@@ -217,6 +217,9 @@ Item {
                     objectName: "startLoginSwitch"
                     text: Tr.t("settings.start_at_login")
                     checked: settingsVM.start_at_login
+                    // Greyed out where we have no way to register a login item,
+                    // rather than storing a preference nothing would honour.
+                    enabled: settingsVM.start_at_login_supported
                     Accessible.name: text
                     onToggled: settingsVM.set_start_at_login(checked)
                 }

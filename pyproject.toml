@@ -119,6 +119,8 @@ module = [
     "privacy_guard.capture.resilience",
     # Pure frame-downscaling logic (AM-12).
     "privacy_guard.capture.downscale",
+    # Pure autostart planning + its thin OS adapters (AM-1).
+    "privacy_guard.ui.autostart",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

@@ -34,6 +34,11 @@ reconnaissance faciale.
   sur le disque** et **n'ouvre aucune connexion réseau** — c'est vérifié par une garde
   statique (AST) sur tout `src/` et par les tests `-m privacy`.
 - **Aucun gabarit biométrique** n'est stocké ou transmis.
+- Deux exceptions, étroites, nommées et gardées individuellement : le **vérificateur
+  de mises à jour** (seul module autorisé à sortir sur le réseau) et le **démarrage à
+  la session** (seul module autorisé à écrire hors `QSettings` — une entrée de
+  lancement : un chemin et un drapeau). Ni l'un ni l'autre ne peut importer le
+  moindre code caméra ou vision, et un test le prouve mécaniquement.
 - ⚠️ **Nuance honnête sur les dépendances tierces :** la bibliothèque **MediaPipe**
   (Google) peut tenter d'émettre sa propre télémétrie (« clearcut ») — visible dans
   les logs. Ce n'est **pas** notre code, et la garantie « strictement local » couvre
@@ -123,20 +128,28 @@ nexshieldveil --light               # thème clair (défaut : sombre)
 - **Indicateur « caméra active »** — visible dès que la caméra lit des images
   (exigence de transparence).
 - **Réglages** — sensibilité du regard, délais de déclenchement/levée (hystérésis),
-  style de masquage (seul le **voile opaque** est actif aujourd'hui ; flou /
-  pixelisation sont marqués « bientôt »), opacité, caméra, démarrage à la session,
-  **langue (FR/EN)** et **thème (clair/sombre)**.
+  style de masquage (voile opaque, flou, pixelisation — tous actifs), opacité,
+  caméra, **démarrage à la session** (réellement enregistré auprès du système :
+  registre sous Windows, `.desktop` XDG sous Linux, LaunchAgent sous macOS ; grisé
+  là où aucun mécanisme n'existe), **langue (FR/EN)** et **thème (clair/sombre)**.
+- **Mises à jour** — vérification différée au démarrage (désactivable), installeur
+  vérifié par empreinte avant tout lancement.
 - **Accessibilité** — contraste AA, focus clavier visible, tout opérable au clavier,
   `prefers-reduced-motion` respecté.
 
-> L'ancienne fenêtre Qt Widgets (aperçu caméra + mises à jour intégrées) reste
-> disponible le temps de la bascule : `nexshieldveil-classic` (ou
-> `python -m privacy_guard.ui`).
+> L'ancienne fenêtre Qt Widgets reste disponible le temps de la bascule :
+> `nexshieldveil-classic` (ou `python -m privacy_guard.ui`).
 
 > **Mises à jour & vie privée.** La vérification des mises à jour est la **seule**
 > fonction qui contacte le réseau (GitHub) ; elle n'envoie **aucune donnée** et est
 > totalement isolée de la caméra (voir [`docs/PRIVACY.md`](docs/PRIVACY.md)). La
 > détection/masquage fonctionne, elle, **100% hors ligne**.
+>
+> L'installeur téléchargé n'est lancé qu'après vérification de son **empreinte
+> SHA-256 publiée** avec la release ; sans empreinte publiée, l'app renvoie vers la
+> page de release plutôt que d'exécuter un binaire qu'elle n'a pas pu vérifier.
+> La vérification au démarrage est différée (la protection démarre d'abord) et
+> désactivable dans **Mises à jour**.
 
 ### 2. Ligne de commande sans interface (headless)
 
@@ -174,6 +187,7 @@ Tous les seuils sont configurables (et conservateurs par défaut). Principaux :
 | `[policy]` | `release_ms` | 800 | Durée d'absence avant démasquage (≥ `trigger_ms`). |
 | `[tracking]` | `smoothing_alpha` | 0.4 | Lissage EMA (1.0 = aucun, le plus réactif). |
 | `[masking]` | `opacity` | 0.92 | Opacité du voile. |
+| `[camera]` | `downscale_width` | 640 | Largeur à laquelle les images sont réduites **avant** la détection (le poste CPU dominant). |
 | `[detection]` | `model_path` | — | Chemin local du modèle MediaPipe. |
 
 ---
@@ -222,16 +236,18 @@ src/privacy_guard/
     core_controller.py #   implémentation réelle (worker thread → snapshot)
     state.py           #   enums + mappings purs (sans Qt)
     translator.py      #   i18n FR/EN commutable à chaud
-    viewmodels/        #   QObjects testables (status, settings, onboarding, about, tray)
+    viewmodels/        #   QObjects testables (status, settings, onboarding, about, tray, updates)
     views/             #   .qml (verre dépoli + transition « voile qui se pose »)
     theme/             #   tokens de design + ThemeController (sombre/clair, motion)
     i18n/              #   fr.json, en.json
+    autostart.py       #   démarrage à la session (plan pur + adaptateurs OS)
     shell.py           #   lancement réel : tray + fenêtres QML
     control_window.py  #   ancienne UI Qt Widgets (fallback « classic »)
   app.py     # pipeline + CLI headless
 scripts/     # run_live.py, diagnose_gaze.py (tests manuels matériels)
 tests/       # unit/ component/ integration/ system/ performance/ privacy/ ui/
-docs/        # ROADMAP ARCHITECTURE PRIVACY LIMITATIONS UI_PLAN DESIGN_TOKENS audit/
+docs/        # ROADMAP ARCHITECTURE PRIVACY LIMITATIONS UI_PLAN DESIGN_TOKENS
+             # ANALYSE_AMELIORATIONS audit/
 ```
 
 ## Licence

@@ -50,6 +50,15 @@ build by two complementary layers in `tests/privacy/`:
    - The only things persisted are the user's *preferences* (language, onboarding
      flag, and the settings panel values — numbers and names, never images), stored
      locally via Qt's standard `QSettings` so they survive a restart.
+   - One preference is necessarily written **outside** `QSettings`: "start at login"
+     is a registration with the operating system, so enabling it writes a launcher
+     entry (a registry value under `HKCU\...\CurrentVersion\Run` on Windows, a
+     `.desktop` file under `~/.config/autostart` on Linux, a LaunchAgent plist on
+     macOS). It contains a path and a flag — nothing about what the camera saw.
+     Disabling the setting removes it. The module that writes it
+     (`privacy_guard/ui/autostart.py`) is mechanically forbidden from importing any
+     camera, vision or network code, and is the only non-updater file allowed to
+     write at all (`tests/privacy/test_source_hygiene.py`).
 
 3. **No frame accumulation.** Frame buffers are not retained across iterations, so
    memory does not grow and old frames cannot be exfiltrated later.

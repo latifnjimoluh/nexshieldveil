@@ -99,6 +99,14 @@ class SettingsViewModel(QObject):
     def _get_start_at_login(self) -> bool:
         return self._c.snapshot.start_at_login
 
+    def _get_start_at_login_supported(self) -> bool:
+        # A switch that cannot act must not look active (AM-1): on a platform
+        # with no autostart mechanism, the view greys it out instead of storing
+        # a preference that would never be honoured.
+        from privacy_guard.ui.autostart import is_supported
+
+        return is_supported()
+
     def _get_language(self) -> str:
         return self._tr.language
 
@@ -124,6 +132,7 @@ class SettingsViewModel(QObject):
     pixelate_blocks_caption = Property(str, _get_pixelate_blocks_caption, notify=changed)
     camera_index = Property(int, _get_camera_index, notify=changed)
     start_at_login = Property(bool, _get_start_at_login, notify=changed)
+    start_at_login_supported = Property(bool, _get_start_at_login_supported, notify=changed)
     language = Property(str, _get_language, notify=changed)
     languages = Property("QVariantList", _get_languages, notify=changed)
 

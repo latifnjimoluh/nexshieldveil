@@ -5,8 +5,25 @@
 > qui reste entre l'état actuel et un produit qu'on peut mettre entre les mains
 > d'utilisateurs, puis proposer des actions concrètes et priorisées.
 >
-> **Ce document propose ; il n'implémente rien.** Chaque constat porte une référence
-> `fichier:ligne` vérifiable et une action chiffrée (S ≤ 1 h · M ≈ ½ j · L ≈ 1–2 j).
+> Chaque constat porte une référence `fichier:ligne` vérifiable et une action chiffrée
+> (S ≤ 1 h · M ≈ ½ j · L ≈ 1–2 j).
+
+---
+
+## 0. Statut — vague 1 livrée
+
+| ID | Statut | Livré |
+|---|---|---|
+| **AM-1** | ✅ | `ui/autostart.py` : plan pur par OS (registre Windows, `.desktop` XDG, LaunchAgent macOS) + adaptateurs ; le shell applique et **réconcilie avec l'état réel** au démarrage ; la case est grisée là où aucun mécanisme n'existe, et revient à la vérité si l'écriture est refusée. |
+| **AM-2** | ✅ | Clés `overlay.title`/`overlay.subtitle`, libellés transmis à la fabrique d'overlay, reconstruction sur changement de langue. |
+| **AM-3** | ✅ | `UpdatesViewModel` + `UpdateView.qml` + entrée tray + vérification différée de 30 s (opt-out), entièrement traduits. |
+| **AM-4** | ✅ | URL contrainte aux hôtes GitHub (redirections comprises), SHA-256 publié vérifié avant lancement, répertoire de téléchargement privé. |
+| **AM-12** | ✅ | `DownscaledFrameSource` branché avant la détection, avec preuve expérimentale que la pose de tête est invariante par changement d'échelle. |
+| **AM-16** | ✅ | Selfcheck QML réparé (il passait au vert avec **toutes** les liaisons cassées) puis ajouté à la CI ; liste de vues unique. |
+| **AM-20** | ✅ | Étude déplacée dans `docs/`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, templates d'issue. |
+
+Les vagues 2 et 3 (§7) restent à faire. Le reste de ce document est l'analyse
+d'origine, conservée telle quelle comme référence.
 
 ---
 
