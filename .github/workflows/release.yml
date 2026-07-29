@@ -1,0 +1,122 @@
+name: Release
+
+# Building a release used to mean: find a Windows machine, run build.ps1 by hand,
+# open Inno Setup, upload the .exe. Nothing tied an installer to a commit, and no
+# checksum was ever published — which is exactly what the updater now needs in
+# order to verify what it downloads (AM-4/AM-6).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (must already exist)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  # Official MediaPipe Face Landmarker model, pinned by digest. The app itself
+  # never downloads anything; this is the build embedding a known-good model, and
+  # a changed file upstream must fail the build rather than ship silently.
+  MODEL_URL: https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+  MODEL_SHA256: 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
+
+jobs:
+  windows-installer:
+    name: Windows installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the tag matches the version in the code
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "Tag $TAG does not match project version $VERSION." >&2
+            echo "Shipping an installer labelled with the wrong version is worse than not shipping." >&2
+            exit 1
+          fi
+          # The installer's own version string is checked by the test suite
+          # (tests/unit/test_version_consistency.py), which runs on every push.
+
+      - name: Install (locked build environment)
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Same discipline as CI (AM-5), with the vision/packaging extras the
+          # frozen build needs. Regenerate with:
+          #   uv pip compile --generate-hashes --extra vision --extra ui \
+          #     --extra packaging --python-version 3.12 --python-platform windows \
+          #     pyproject.toml -o requirements-build.txt
+          pip install --require-hashes -r requirements-build.txt
+          pip install -e . --no-deps
+
+      - name: Fetch and verify the MediaPipe model
+        run: |
+          mkdir -p models
+          curl -sSL --fail -o models/face_landmarker.task "$MODEL_URL"
+          echo "$MODEL_SHA256  models/face_landmarker.task" | sha256sum -c -
+
+      - name: QML selfcheck (before freezing)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: nexshieldveil --check
+
+      - name: Build the frozen app
+        run: pyinstaller --noconfirm --clean packaging/nexshieldveil.spec
+
+      - name: Selfcheck the FROZEN app
+        # The whole point of `--check`: a bundle can miss a QML file or a data
+        # dir and still start. This runs the shipped binary, not the source.
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ./dist/NexShieldVeil/NexShieldVeil.exe --check
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Compile the installer
+        run: |
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" packaging/installer.iss
+
+      - name: Publish the checksums
+        # The updater refuses to run an installer whose SHA-256 is not published
+        # with the release (AM-4), so this file is not optional metadata: without
+        # it, users get "update available" and a link, never a one-click install.
+        run: |
+          cd packaging/Output
+          sha256sum NexShieldVeil-Setup.exe > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexshieldveil-installer
+          path: |
+            packaging/Output/NexShieldVeil-Setup.exe
+            packaging/Output/SHA256SUMS
+
+      - name: Attach to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag || true
+          gh release upload "$TAG" \
+            packaging/Output/NexShieldVeil-Setup.exe \
+            packaging/Output/SHA256SUMS \
+            --clobber
