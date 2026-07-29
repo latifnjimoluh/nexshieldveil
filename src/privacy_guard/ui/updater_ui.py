@@ -7,7 +7,6 @@ display adapter: it needs PySide6 and is excluded from coverage.
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 from privacy_guard import __version__
@@ -86,24 +85,34 @@ if _QT_AVAILABLE:  # pragma: no cover - requires a display
                 self.failed.emit(str(exc))
 
     class UpdateDownloadThread(QThread):
-        """Downloads the installer off the UI thread, reporting progress."""
+        """Downloads *and verifies* the installer off the UI thread (AM-4)."""
 
         progressed = Signal(float)
         downloaded = Signal(str)
         failed = Signal(str)
 
-        def __init__(self, url: str, dest: str) -> None:
-            """Store the asset URL and destination path."""
+        def __init__(self, url: str, dest: str, expected_sha256: str) -> None:
+            """Store the asset URL, destination path, and the published digest."""
             super().__init__()
             self._url = url
             self._dest = dest
+            self._expected_sha256 = expected_sha256
 
         def run(self) -> None:
-            """Download the installer and emit the local path (or an error)."""
+            """Download the installer and emit the local path (or an error).
+
+            A checksum mismatch or an untrusted host surfaces here as a failure:
+            the path is only emitted for a file that matched its published digest.
+            """
             try:
                 from privacy_guard.update import download_installer
 
-                path = download_installer(self._url, self._dest, progress=self.progressed.emit)
+                path = download_installer(
+                    self._url,
+                    self._dest,
+                    self._expected_sha256,
+                    progress=self.progressed.emit,
+                )
                 self.downloaded.emit(path)
             except Exception as exc:  # report, never crash the app
                 self.failed.emit(str(exc))
@@ -186,11 +195,17 @@ if _QT_AVAILABLE:  # pragma: no cover - requires a display
             self._info = info
             version = getattr(info, "version", "?")
             self._status.setText(f"Nouvelle version <b>{version}</b> disponible.")
-            self._install_btn.setVisible(getattr(info, "installer_url", None) is not None)
-            if getattr(info, "installer_url", None) is None:
+            # Only offer the one-click install when the release publishes a
+            # checksum we can verify the download against (AM-4). Without it the
+            # user goes through the release page — we do not run an unverified
+            # executable on their machine.
+            can_install = bool(getattr(info, "can_auto_install", False))
+            self._install_btn.setVisible(can_install)
+            if not can_install:
                 self._status.setText(
-                    f"Nouvelle version <b>{version}</b> disponible "
-                    "(pas d'installeur attaché — voir la page de release)."
+                    f"Nouvelle version <b>{version}</b> disponible. "
+                    "Installation automatique indisponible (pas d'installeur vérifiable "
+                    "attaché à cette release) — voir la page de release."
                 )
 
         def _on_failed(self, message: str) -> None:
@@ -199,14 +214,19 @@ if _QT_AVAILABLE:  # pragma: no cover - requires a display
 
         def _download_and_install(self) -> None:
             url = getattr(self._info, "installer_url", None)
-            if not url:
+            digest = getattr(self._info, "installer_sha256", None)
+            if not url or not digest:
                 return
-            dest = str(Path(tempfile.gettempdir()) / "NexShieldVeil-Setup.exe")
+            from privacy_guard.update import installer_download_dir
+
+            # A private, user-only directory: in the shared temp dir another local
+            # process could swap the file between verification and launch (AM-4).
+            dest = str(Path(installer_download_dir()) / "NexShieldVeil-Setup.exe")
             self._install_btn.setEnabled(False)
             self._progress.setValue(0)
             self._progress.show()
             self._status.setText("Téléchargement…")
-            self._dl_thread = UpdateDownloadThread(url, dest)
+            self._dl_thread = UpdateDownloadThread(url, dest, digest)
             self._dl_thread.progressed.connect(lambda f: self._progress.setValue(int(f * 100)))
             self._dl_thread.downloaded.connect(self._on_downloaded)
             self._dl_thread.failed.connect(self._on_failed)

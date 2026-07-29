@@ -32,6 +32,15 @@ build by two complementary layers in `tests/privacy/`:
    > read-only GETs), and it is mechanically isolated from the camera. You can turn off
    > the automatic check in **Paramètres** (it is the only thing that ever contacts the
    > network, and it is easy to verify/block at your firewall).
+   >
+   > **Integrity of what it downloads.** TLS authenticates the *transport*, not the
+   > *artefact*, so the updater adds three checks: every URL it fetches must be on a
+   > GitHub host (**redirects included**); the installer is only handed over once its
+   > SHA-256 matches the `SHA256SUMS` published in the same release — a mismatch
+   > deletes the file and fails loudly; and the download lands in a private,
+   > user-only directory rather than the shared temp directory. A release without a
+   > published digest yields **no automatic install**: the app points you at the
+   > release page instead of running an unverified executable.
 
 2. **No image data is written to disk.** Frames exist only in RAM for the duration
    of processing and are then released. Nothing is cached or logged as an image.
