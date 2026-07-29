@@ -54,6 +54,26 @@ class DetectionConfig(_StrictModel):
     )
     max_faces: int = Field(default=4, ge=1, le=10)
     min_detection_confidence: float = Field(default=0.5, gt=0.0, le=1.0)
+    use_iris: bool = Field(
+        default=False,
+        description=(
+            "Refine the gaze with the iris position on top of the head pose (AM-9). "
+            "OFF by default: a wrong offset moves the gaze ray and can invent false "
+            "positives, so it stays opt-in until measured on real hardware."
+        ),
+    )
+    iris_max_offset_deg: float = Field(
+        default=25.0,
+        ge=0.0,
+        le=60.0,
+        description="Angular deflection attributed to a fully deviated iris.",
+    )
+    iris_weight: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="How much of the iris offset to apply (0 = head pose only).",
+    )
 
 
 class GeometryConfig(_StrictModel):

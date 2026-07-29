@@ -91,6 +91,17 @@ and hide the content.** This implies the limits below.
   eventually mask the screen. That is the safe direction to fail in, but it does
   mean the lock can hide your screen while you are sitting right in front of it.
 
+## Gaze estimation: head pose, and optionally the iris
+
+- **By default the gaze is the head pose.** Someone who keeps their head straight
+  and moves only their *eyes* toward your screen is read as "not looking" — a
+  real miss the detection cannot currently catch.
+- An **experimental** iris correction exists (`detection.use_iris`, off by
+  default). It has **not been validated on real hardware**, and it is not free
+  to be wrong: an incorrect offset moves the gaze ray and can create false
+  positives where there were none. Treat it as something to measure, not as an
+  improvement you can assume.
+
 ## Accuracy caveats
 
 - Webcam gaze estimation typically carries **1.5–3° of error**; we do **not** claim

@@ -55,6 +55,16 @@ _MODEL_POINTS = np.array(
 )
 _LANDMARK_IDS = (1, 152, 33, 263, 61, 291)
 
+# Iris + eye-opening landmarks (AM-9). The Face Landmarker task returns 478
+# points: the last ten are the two irises, present only with the refined mesh.
+# Indices are MediaPipe's canonical ones.
+_LEFT_IRIS = (468, 469, 470, 471, 472)
+_RIGHT_IRIS = (473, 474, 475, 476, 477)
+# (inner corner, outer corner, upper lid, lower lid) per eye.
+_LEFT_EYE_BOX = (133, 33, 159, 145)
+_RIGHT_EYE_BOX = (362, 263, 386, 374)
+_IRIS_LANDMARK_COUNT = 478
+
 
 def _wrap_pitch_deg(pitch_deg: float) -> float:
     """Normalize a solvePnP pitch angle into ``[-90, 90)``.
@@ -74,13 +84,26 @@ def _wrap_pitch_deg(pitch_deg: float) -> float:
 class MediaPipeFaceDetector(FaceDetector):
     """Face/landmark detector backed by MediaPipe's Face Landmarker task."""
 
-    def __init__(self, model_path: str, max_faces: int = 4, min_confidence: float = 0.5) -> None:
+    def __init__(
+        self,
+        model_path: str,
+        max_faces: int = 4,
+        min_confidence: float = 0.5,
+        use_iris: bool = False,
+        iris_max_offset_deg: float = 25.0,
+        iris_weight: float = 1.0,
+    ) -> None:
         """Load the Face Landmarker model.
 
         Args:
             model_path: Local path to the ``.task`` model file (no auto-download).
             max_faces: Maximum number of faces to detect.
             min_confidence: Minimum detection confidence.
+            use_iris: Refine the gaze with the iris position (AM-9). Off by
+                default and unvalidated on hardware; see
+                :mod:`privacy_guard.geometry.iris`.
+            iris_max_offset_deg: Deflection attributed to a fully deviated iris.
+            iris_weight: How much of that offset to apply.
 
         Raises:
             RuntimeError: If MediaPipe/OpenCV are unavailable.
@@ -88,6 +111,9 @@ class MediaPipeFaceDetector(FaceDetector):
         if not _DEPS_AVAILABLE:  # pragma: no cover - trivial guard
             msg = "MediaPipe/OpenCV unavailable; install the 'vision' extra and provide a model."
             raise RuntimeError(msg)
+        self._use_iris = use_iris
+        self._iris_max_offset_deg = iris_max_offset_deg
+        self._iris_weight = iris_weight
         self._build_landmarker(model_path, max_faces, min_confidence)
 
     def _build_landmarker(  # pragma: no cover - requires mediapipe
@@ -134,6 +160,8 @@ class MediaPipeFaceDetector(FaceDetector):
             dtype=np.float64,
         )
         yaw, pitch, position = self._solve_head_pose(image_points, w, h)
+        if self._use_iris:
+            yaw, pitch = self._refine_with_iris(landmarks, yaw, pitch)
         return FaceObservation(
             center_x=center_x,
             center_y=center_y,
@@ -143,6 +171,41 @@ class MediaPipeFaceDetector(FaceDetector):
             pitch_deg=pitch,
             gaze_estimable=True,
         )
+
+    def _refine_with_iris(  # pragma: no cover - requires mediapipe
+        self, landmarks: list, yaw: float, pitch: float
+    ) -> tuple[float, float]:
+        """Add the iris offset to the head pose, averaged over both eyes.
+
+        Degrades silently to the head pose alone whenever the refined mesh is
+        absent (a model without iris points) or an eye is closed: no landmark,
+        no correction — never a guess.
+        """
+        from privacy_guard.geometry import compose_gaze, iris_offset_deg
+
+        if len(landmarks) < _IRIS_LANDMARK_COUNT:
+            return (yaw, pitch)
+        offsets = []
+        for iris_ids, (inner, outer, top, bottom) in (
+            (_LEFT_IRIS, _LEFT_EYE_BOX),
+            (_RIGHT_IRIS, _RIGHT_EYE_BOX),
+        ):
+            iris_x = float(np.mean([landmarks[i].x for i in iris_ids]))
+            iris_y = float(np.mean([landmarks[i].y for i in iris_ids]))
+            offsets.append(
+                iris_offset_deg(
+                    iris_x,
+                    iris_y,
+                    inner_x=landmarks[inner].x,
+                    outer_x=landmarks[outer].x,
+                    top_y=landmarks[top].y,
+                    bottom_y=landmarks[bottom].y,
+                    max_offset_deg=self._iris_max_offset_deg,
+                )
+            )
+        iris_yaw = float(np.mean([o[0] for o in offsets]))
+        iris_pitch = float(np.mean([o[1] for o in offsets]))
+        return compose_gaze(yaw, pitch, iris_yaw, iris_pitch, weight=self._iris_weight)
 
     @staticmethod
     def _solve_head_pose(  # pragma: no cover - requires opencv

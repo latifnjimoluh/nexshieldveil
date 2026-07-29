@@ -259,6 +259,9 @@ def build_runtime_components(
             model_path=config.detection.model_path,
             max_faces=config.detection.max_faces,
             min_confidence=config.detection.min_detection_confidence,
+            use_iris=config.detection.use_iris,
+            iris_max_offset_deg=config.detection.iris_max_offset_deg,
+            iris_weight=config.detection.iris_weight,
         )
     else:
         logger.warning("MediaPipe/model unavailable; detector cannot see faces (degraded mode).")

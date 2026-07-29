@@ -19,6 +19,13 @@ idle_after_ms = 30000
 # model_path = "models/face_landmarker.task"
 max_faces = 4
 min_detection_confidence = 0.5
+# Refine the gaze with the iris position on top of the head pose. OFF by default:
+# the model is a linear approximation and has NOT been validated on real hardware.
+# A wrong offset does not merely fail to help — it moves the gaze ray and can
+# invent false positives. Turn it on only if you can measure the difference.
+use_iris = false
+iris_max_offset_deg = 25.0
+iris_weight = 1.0
 
 [geometry]
 # How forgiving the "is this gaze pointing at my screen?" test is. Generous by

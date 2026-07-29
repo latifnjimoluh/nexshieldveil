@@ -158,6 +158,9 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
                 model_path=self._model_path,
                 max_faces=self._config.detection.max_faces,
                 min_confidence=self._config.detection.min_detection_confidence,
+                use_iris=self._config.detection.use_iris,
+                iris_max_offset_deg=self._config.detection.iris_max_offset_deg,
+                iris_weight=self._config.detection.iris_weight,
             )
         except RuntimeError as exc:
             logger.warning("Capture/detector init failed: %s", exc)
