@@ -50,6 +50,11 @@ risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](
   échouaient à l'exécution. Il vérifie désormais aussi les erreurs de liaison, et
   tourne en CI.
 
+### Retiré
+- L'ancienne fenêtre Qt Widgets (`nexshieldveil-classic`, `python -m privacy_guard.ui`)
+  et son dialogue de mise à jour : tout ce qu'elle détenait encore vit désormais
+  dans l'interface QML.
+
 ### Documentation
 - `docs/ANALYSE_AMELIORATIONS.md` : revue complète de la v0.3.1 et propositions
   priorisées.

@@ -1,29 +1,16 @@
-"""Qt glue for the self-updater: background threads + the Settings dialog.
+"""Qt glue for the self-updater: background threads, the tray icon, the preference.
 
 The actual network lives in :mod:`privacy_guard.update.checker` (quarantined). This
-module only wraps it in QThreads (so the UI never blocks) and a small dialog. It is a
-display adapter: it needs PySide6 and is excluded from coverage.
+module only wraps it in QThreads so the UI never blocks. Everything the user sees
+is in the QML update surface (:mod:`privacy_guard.ui.viewmodels.updates`); this is
+a display adapter, so it needs PySide6 and is excluded from coverage.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from privacy_guard import __version__
-
 try:  # pragma: no cover - import guard
     from PySide6.QtCore import QPointF, QSettings, Qt, QThread, Signal
     from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap, QPolygonF
-    from PySide6.QtWidgets import (
-        QApplication,
-        QCheckBox,
-        QDialog,
-        QHBoxLayout,
-        QLabel,
-        QProgressBar,
-        QPushButton,
-        QVBoxLayout,
-    )
 
     _QT_AVAILABLE = True
 except ImportError:  # pragma: no cover
@@ -43,7 +30,7 @@ def auto_check_enabled() -> bool:
 
 
 def set_auto_check_enabled(enabled: bool) -> None:
-    """Persist the 'check on startup' preference (shared by both UIs)."""
+    """Persist the 'check on startup' preference."""
     if not _QT_AVAILABLE:  # pragma: no cover
         return
     QSettings(_ORG, _APP).setValue(_AUTO_CHECK_KEY, bool(enabled))
@@ -123,125 +110,3 @@ if _QT_AVAILABLE:  # pragma: no cover - requires a display
                 self.downloaded.emit(path)
             except Exception as exc:  # report, never crash the app
                 self.failed.emit(str(exc))
-
-    class SettingsDialog(QDialog):
-        """Settings + update panel: version, auto-check toggle, check/download/install."""
-
-        def __init__(self, parent: object = None) -> None:
-            """Build the settings dialog."""
-            super().__init__(parent)  # type: ignore[arg-type]
-            self.setWindowTitle("Paramètres — NexShieldVeil")
-            self.setMinimumWidth(440)
-            self._info = None
-            self._check_thread: UpdateCheckThread | None = None
-            self._dl_thread: UpdateDownloadThread | None = None
-            self._build()
-
-        def _build(self) -> None:
-            root = QVBoxLayout(self)
-            root.setSpacing(12)
-            root.setContentsMargins(18, 16, 18, 16)
-
-            root.addWidget(QLabel(f"<b>NexShieldVeil</b> — version {__version__}"))
-
-            self._auto = QCheckBox("Vérifier les mises à jour au démarrage")
-            self._auto.setChecked(auto_check_enabled())
-            self._auto.toggled.connect(self._save_auto)
-            root.addWidget(self._auto)
-
-            row = QHBoxLayout()
-            self._check_btn = QPushButton("Vérifier les mises à jour")
-            self._check_btn.clicked.connect(self.check_now)
-            row.addWidget(self._check_btn)
-            row.addStretch(1)
-            root.addLayout(row)
-
-            self._status = QLabel("")
-            self._status.setWordWrap(True)
-            root.addWidget(self._status)
-
-            self._progress = QProgressBar()
-            self._progress.setRange(0, 100)
-            self._progress.hide()
-            root.addWidget(self._progress)
-
-            self._install_btn = QPushButton("Télécharger et installer")
-            self._install_btn.clicked.connect(self._download_and_install)
-            self._install_btn.hide()
-            root.addWidget(self._install_btn)
-
-            close = QPushButton("Fermer")
-            close.clicked.connect(self.accept)
-            foot = QHBoxLayout()
-            foot.addStretch(1)
-            foot.addWidget(close)
-            root.addLayout(foot)
-
-        def _save_auto(self, value: bool) -> None:
-            QSettings(_ORG, _APP).setValue(_AUTO_CHECK_KEY, value)
-
-        def check_now(self) -> None:
-            """Start a manual update check."""
-            self._status.setText("Vérification en cours…")
-            self._check_btn.setEnabled(False)
-            self._check_thread = UpdateCheckThread(self)
-            self._check_thread.found.connect(self._on_found)
-            self._check_thread.failed.connect(self._on_failed)
-            self._check_thread.start()
-
-        def present_update(self, info: object) -> None:
-            """Display an update already found elsewhere (e.g. the startup check)."""
-            self._on_found(info)
-
-        def _on_found(self, info: object) -> None:
-            self._check_btn.setEnabled(True)
-            if info is None:
-                self._status.setText("Vous avez déjà la dernière version. ✅")
-                self._install_btn.hide()
-                return
-            self._info = info
-            version = getattr(info, "version", "?")
-            self._status.setText(f"Nouvelle version <b>{version}</b> disponible.")
-            # Only offer the one-click install when the release publishes a
-            # checksum we can verify the download against (AM-4). Without it the
-            # user goes through the release page — we do not run an unverified
-            # executable on their machine.
-            can_install = bool(getattr(info, "can_auto_install", False))
-            self._install_btn.setVisible(can_install)
-            if not can_install:
-                self._status.setText(
-                    f"Nouvelle version <b>{version}</b> disponible. "
-                    "Installation automatique indisponible (pas d'installeur vérifiable "
-                    "attaché à cette release) — voir la page de release."
-                )
-
-        def _on_failed(self, message: str) -> None:
-            self._check_btn.setEnabled(True)
-            self._status.setText(f"Échec de la vérification : {message}")
-
-        def _download_and_install(self) -> None:
-            url = getattr(self._info, "installer_url", None)
-            digest = getattr(self._info, "installer_sha256", None)
-            if not url or not digest:
-                return
-            from privacy_guard.update import installer_download_dir
-
-            # A private, user-only directory: in the shared temp dir another local
-            # process could swap the file between verification and launch (AM-4).
-            dest = str(Path(installer_download_dir()) / "NexShieldVeil-Setup.exe")
-            self._install_btn.setEnabled(False)
-            self._progress.setValue(0)
-            self._progress.show()
-            self._status.setText("Téléchargement…")
-            self._dl_thread = UpdateDownloadThread(url, dest, digest)
-            self._dl_thread.progressed.connect(lambda f: self._progress.setValue(int(f * 100)))
-            self._dl_thread.downloaded.connect(self._on_downloaded)
-            self._dl_thread.failed.connect(self._on_failed)
-            self._dl_thread.start()
-
-        def _on_downloaded(self, path: str) -> None:
-            from privacy_guard.update import launch_installer
-
-            self._status.setText("Lancement de l'installeur…")
-            launch_installer(path)
-            QApplication.quit()

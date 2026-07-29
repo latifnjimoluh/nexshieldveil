@@ -13,7 +13,7 @@
 | H3 | L'UI **n'accède jamais directement** au cœur (`PrivacyGuardPipeline`, MediaPipe, OpenCV). Elle ne parle qu'à une **interface d'état** (`AppController`). | Découplage, testabilité headless, pas de duplication de logique (brief §3/§10.4). | — |
 | H4 | Le **thread de capture/inférence reste hors UI** (déjà le cas : `QTimer`/`QThread` côté cœur). Les view-models ne font **aucun travail lourd**. | Brief §2 : ne jamais geler l'event loop. | — |
 | H5 | Les préférences persistent via `QSettings` (déjà utilisé par l'updater). **Aucune** nouvelle écriture réseau/fichier image. | Cohérence avec l'existant ; contrainte vie privée. | — |
-| H6 | L'ancienne `control_window.py` (Qt Widgets) est **conservée** comme chemin de repli legacy le temps de la bascule, puis l'entrée par défaut pointera vers la coquille QML. | Évite de casser `nexshieldveil`/`python -m privacy_guard.ui` pendant le chantier. | — |
+| H6 | ~~L'ancienne `control_window.py` (Qt Widgets) est conservée comme repli legacy le temps de la bascule.~~ **Bascule terminée (AM-18)** : elle a été supprimée une fois la dernière fonction qu'elle détenait (les mises à jour) portée côté QML. | — | — |
 | H7 | La langue par défaut suit la locale système, repli **FR** (public premier du projet), bascule FR/EN manuelle dans les réglages. | Le projet est rédigé en français ; EN requis par le brief §6. | — |
 | H8 | « Style de masquage » dans l'UI n'expose honnêtement que ce qui est **réellement câblé** (voile opaque). Pixelisation/flou sont montrés comme **à venir** (désactivés/étiquetés), jamais comme actifs. | Brief §2 honnêteté + `overlay_strategy_is_live()` du cœur. | — |
 
@@ -201,11 +201,12 @@ Smoke QML, pilotés par l'état, accessibilité, honnêteté de la copie, parit�
 ### Limites connues / suites possibles
 - Le `shell.py` (tray + fenêtres QML) et les chemins matériels du `CoreController`
   sont du *glue* d'affichage, exclus de la couverture (testés à la main sur machine
-  équipée) — comme l'ancien `control_window`.
+  équipée).
 - Les polices OFL ne sont pas vendues dans le dépôt (repli système) — voir
   `ui/assets/fonts/README.md`.
-- L'auto-updater (réseau quarantiné) n'est pas encore rebranché dans la coquille QML ;
-  il reste accessible via `nexshieldveil-classic`.
+- ~~L'auto-updater n'est pas encore rebranché dans la coquille QML.~~ Fait (AM-3) :
+  view-model + `UpdateView.qml` + entrée tray, avec vérification différée au
+  démarrage. L'ancienne fenêtre a ensuite été supprimée (AM-18).
 - Le « vrai backdrop-blur » (flou de l'arrière-plan derrière les panneaux) est simulé
   par translucidité + lueur de bord pour rester performant ; un `MultiEffect` pourra
   l'enrichir plus tard sans changer le contrat.

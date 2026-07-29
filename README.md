@@ -137,9 +137,6 @@ nexshieldveil --light               # thème clair (défaut : sombre)
 - **Accessibilité** — contraste AA, focus clavier visible, tout opérable au clavier,
   `prefers-reduced-motion` respecté.
 
-> L'ancienne fenêtre Qt Widgets reste disponible le temps de la bascule :
-> `nexshieldveil-classic` (ou `python -m privacy_guard.ui`).
-
 > **Mises à jour & vie privée.** La vérification des mises à jour est la **seule**
 > fonction qui contacte le réseau (GitHub) ; elle n'envoie **aucune donnée** et est
 > totalement isolée de la caméra (voir [`docs/PRIVACY.md`](docs/PRIVACY.md)). La
@@ -241,8 +238,9 @@ src/privacy_guard/
     theme/             #   tokens de design + ThemeController (sombre/clair, motion)
     i18n/              #   fr.json, en.json
     autostart.py       #   démarrage à la session (plan pur + adaptateurs OS)
+    session_lock.py    #   suspension pendant qu'une session est verrouillée
+    calibrate.py       #   taille d'écran mesurée auprès du système
     shell.py           #   lancement réel : tray + fenêtres QML
-    control_window.py  #   ancienne UI Qt Widgets (fallback « classic »)
   app.py     # pipeline + CLI headless
 scripts/     # run_live.py, diagnose_gaze.py (tests manuels matériels)
 tests/       # unit/ component/ integration/ system/ performance/ privacy/ ui/

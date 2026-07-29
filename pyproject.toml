@@ -51,7 +51,6 @@ dev = [
 [project.scripts]
 privacy-guard = "privacy_guard.app:main"
 nexshieldveil = "privacy_guard.ui.shell:main"
-nexshieldveil-classic = "privacy_guard.ui.control_window:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -165,9 +164,7 @@ omit = [
     "*/overlay/qt_overlay.py",
     "*/overlay/qt_grabber.py",
     "*/capture/opencv_sources.py",
-    "*/ui/control_window.py",
     "*/ui/updater_ui.py",
-    "*/ui/__main__.py",
     # The QML shell is display/hardware glue (tray + windows); its logic lives in the
     # unit-tested view-models. CoreController's pure result-mapping stays covered.
     "*/ui/shell.py",

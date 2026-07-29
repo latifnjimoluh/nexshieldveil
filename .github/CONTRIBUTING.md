@@ -41,7 +41,7 @@ logique peut en sortir :
 
 - `config`, `geometry`, `tracking`, `policy`, `masking` — purs, typés strict
   (`mypy` strict), couverture attendue ≥ 95 %, testables sans matériel ;
-- `capture`, `vision`, `overlay`, `ui/shell`, `ui/control_window` — adaptateurs :
+- `capture`, `vision`, `overlay`, `ui/shell` — adaptateurs :
   minces, derrière une interface injectable et une garde d'import, dégradables.
 
 Un module qui a besoin de matériel doit exposer sa *décision* dans un module pur.

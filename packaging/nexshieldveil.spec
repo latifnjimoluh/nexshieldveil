@@ -59,8 +59,21 @@ hiddenimports += [
     "privacy_guard.ui.viewmodels.settings",
     "privacy_guard.ui.viewmodels.onboarding",
     "privacy_guard.ui.viewmodels.about",
+    "privacy_guard.ui.viewmodels.camera",
+    "privacy_guard.ui.viewmodels.updates",
     "privacy_guard.ui.updater_ui",
-    "privacy_guard.ui.control_window",  # kept for `nexshieldveil-classic`
+    "privacy_guard.ui.preview",
+    # Imported lazily from shell.main()/the settings view-model, so PyInstaller
+    # cannot see them by following imports (AM-18): a missing one here would
+    # only surface when the user toggles the setting, in a shipped build.
+    "privacy_guard.ui.autostart",
+    "privacy_guard.ui.session_lock",
+    "privacy_guard.ui.calibrate",
+    "privacy_guard.ui.screen_probe",
+    "privacy_guard.capture.downscale",
+    "privacy_guard.capture.cadence",
+    "privacy_guard.update",
+    "privacy_guard.update.checker",
     # Qt Quick runtime (the views use QtQuick + Controls.Basic).
     "PySide6.QtQml",
     "PySide6.QtQuick",
