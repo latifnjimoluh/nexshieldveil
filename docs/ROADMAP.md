@@ -173,6 +173,41 @@ avec temporisation (déclenchement après N ms de regard détecté, levée aprè
       l'état affiché distingue honnêtement « pause temporaire (reprise auto) »
       de « pause jusqu'à nouvel ordre ». Jamais persisté (état de session).
 
+### Chantier honnêteté — vague 1 de `docs/ANALYSE_AMELIORATIONS.md`
+
+Revue complète de la v0.3.1. Le code était sain (420 tests verts, 96 % de
+couverture) ; l'écart restant portait sur des fonctionnalités **annoncées mais non
+câblées** — exactement ce que la règle d'honnêteté du projet interdit.
+
+- [x] **AM-1 — Démarrer à la session.** Le réglage était un interrupteur inerte :
+      persisté, jamais enregistré auprès de l'OS. `ui/autostart.py` calcule un plan
+      pur par plateforme (registre Windows, `.desktop` XDG, LaunchAgent macOS) et
+      l'applique ; l'état affiché est lu du système, une écriture refusée remet
+      l'interrupteur à la vérité, et la case est grisée là où aucun mécanisme
+      n'existe. Garde AST **renforcée** (violations typées réseau/écriture,
+      `write_text`/`write_bytes`/`os.open` désormais attrapés) plutôt qu'assouplie.
+- [x] **AM-2 — Libellés du voile.** Le masque plein écran affichait du français en
+      dur quelle que soit la langue. Libellés traduits, transmis à la fabrique
+      d'overlay, reconstruits au changement de langue.
+- [x] **AM-3 — Mises à jour dans l'app QML.** L'updater ne vivait que dans
+      l'ancienne fenêtre alors que l'installeur livre le shell QML : aucun
+      utilisateur installé n'aurait été informé d'une nouvelle version. Surface
+      dédiée (view-model + vue + entrée tray + vérification différée opt-out).
+- [x] **AM-4 — Intégrité de l'installeur.** Le seul chemin qui exécute du code
+      téléchargé ne vérifiait rien. URL contrainte aux hôtes GitHub (redirections
+      comprises), SHA-256 publié vérifié avant lancement, répertoire privé.
+- [x] **AM-12 — `downscale_width` appliqué.** Clé documentée mais morte :
+      l'inférence tournait à la résolution native. `DownscaledFrameSource` branché
+      avant la détection, avec preuve expérimentale que la pose de tête est
+      invariante par changement d'échelle (dérive ~4e-6°).
+- [x] **AM-16/AM-20 — Selfcheck et hygiène.** Le selfcheck QML sortait en succès
+      alors que les view-models étaient collectés et que **toutes** les liaisons
+      échouaient ; réparé, durci (les avertissements du moteur font échouer) et
+      ajouté à la CI. Plus `CHANGELOG`, `SECURITY`, `CONTRIBUTING`, templates.
+
+Reste ouvert : vagues 2 et 3 de `docs/ANALYSE_AMELIORATIONS.md` (qualité de
+détection, autonomie, industrialisation de la release).
+
 ---
 
 ## 5. Hypothèses prises (à défaut de blocage)

@@ -194,7 +194,9 @@ def _open(url: str, timeout: float, headers: dict[str, str] | None = None):  # n
         msg = f"refusing to fetch an untrusted URL: {url}"
         raise UntrustedSourceError(msg)
     request = urllib.request.Request(url, headers=headers or _HEADERS)
-    return _opener().open(request, timeout=timeout)  # nosec B310 - scheme checked above
+    # Safe because the scheme and host were allow-listed above, and the opener
+    # refuses any redirect that would leave those hosts (B310).
+    return _opener().open(request, timeout=timeout)  # nosec B310
 
 
 def _fetch_latest(timeout: float) -> dict:
