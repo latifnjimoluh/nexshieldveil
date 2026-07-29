@@ -50,6 +50,15 @@ risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](
   échouaient à l'exécution. Il vérifie désormais aussi les erreurs de liaison, et
   tourne en CI.
 
+- Correction manuelle de la géométrie d'écran (largeur, hauteur, position de la
+  caméra) quand la mesure système est fausse ou absente.
+- Correction du regard par l'iris, **désactivée par défaut** et non validée sur
+  matériel.
+- Release automatisée sur tag : installeur Windows et `SHA256SUMS` publiés, modèle
+  MediaPipe vérifié par empreinte, binaire gelé auto-testé avant publication.
+- Dépendances verrouillées (empreintes) pour la CI et le build.
+- Job CI non bloquant exerçant les vrais adaptateurs OpenCV/MediaPipe.
+
 ### Retiré
 - L'ancienne fenêtre Qt Widgets (`nexshieldveil-classic`, `python -m privacy_guard.ui`)
   et son dialogue de mise à jour : tout ce qu'elle détenait encore vit désormais

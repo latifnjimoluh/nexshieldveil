@@ -229,9 +229,26 @@ câblées** — exactement ce que la règle d'honnêteté du projet interdit.
       verrouillage. Suspension/reprise (Windows, logind) ; macOS non implémenté et
       documenté comme tel.
 
-Reste ouvert : vague 3 de `docs/ANALYSE_AMELIORATIONS.md` (release automatisée,
-verrouillage des dépendances, job CI `[vision,ui]`, suppression de l'UI classic,
-regard iris, packaging multiplateforme).
+### Chantier honnêteté — vague 3 (industrialisation)
+
+- [x] **AM-5 — Dépendances verrouillées.** Bornes de majeures ≠ reproductibilité :
+      lock universel épinglé et vérifié par empreinte pour la CI et le build.
+- [x] **AM-6 — Release automatisée.** Sur tag : build verrouillé, modèle vérifié
+      par empreinte, selfcheck du binaire **gelé**, installeur, `SHA256SUMS`
+      publiés — sans quoi l'updater d'AM-4 ne peut rien installer.
+- [x] **AM-17 — Chemin réel en CI.** Job non bloquant avec les extras vision et
+      session réelle sur clip généré. A révélé que `ci.yml` ne parsait plus depuis
+      la vague 1 ; les workflows ont désormais leurs propres tests.
+- [x] **AM-18 — UI classic supprimée**, spec PyInstaller corrigée au passage.
+- [x] **AM-9 — Regard iris**, implémenté et testé mais **désactivé par défaut** :
+      non validé sur matériel, et se tromper coûte des faux positifs.
+- [x] **AM-10b (partiel) — Correction manuelle** de la géométrie d'écran.
+      L'assistant guidé reste à faire (validation matérielle indispensable).
+- [x] **AM-19 (partiel) — Plateformes annoncées** dans le README. Le packaging
+      macOS/Linux reste à faire.
+
+Reste ouvert : assistant de calibration guidé, packaging macOS/Linux, et la
+campagne de validation matérielle que la DoD attend toujours (§1).
 
 ---
 

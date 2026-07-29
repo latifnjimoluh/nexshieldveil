@@ -33,8 +33,21 @@
 | **AM-10** | ✅ | Taille d'écran lue via `QScreen.physicalSize()` derrière un filtre de plausibilité pur (EDID est souvent faux) ; une taille écrite dans le TOML l'emporte. Asymétrie multi-écran documentée. |
 | **AM-14** | ✅ | `SessionSuspender` (pur) + adaptateurs Windows et logind. **macOS non implémenté**, dit explicitement plutôt qu'approximé. |
 
-La vague 3 (§7) reste à faire. Le reste de ce document est l'analyse d'origine,
-conservée telle quelle comme référence.
+## 0 ter. Statut — vague 3 livrée
+
+| ID | Statut | Livré |
+|---|---|---|
+| **AM-5** | ✅ | `requirements-ci.txt` universel, épinglé et vérifié par empreinte, utilisé par la CI ; bornes ouvertes conservées pour les installations utilisateur. |
+| **AM-6** | ✅ | `release.yml` sur tag : environnement verrouillé, modèle MediaPipe vérifié par empreinte épinglée, selfcheck **du binaire gelé**, Inno Setup, `SHA256SUMS` publiés (ce dont dépend AM-4). Deux garde-fous sur la version. |
+| **AM-17** | ✅ | Job non bloquant `[vision,ui]` + tests de session réelle sur clip généré. A révélé au passage que `ci.yml` ne parsait plus depuis la vague 1 : les workflows ont maintenant leurs tests. |
+| **AM-18** | ✅ | `control_window.py`, le point d'entrée `classic` et le dialogue mort supprimés ; la spec PyInstaller corrigée (elle ignorait tous les modules importés paresseusement depuis). |
+| **AM-9** | ✅ (désactivé) | Géométrie iris pure et testée, extraction derrière `detection.use_iris`. **Non validé sur matériel** — un mauvais décalage déplace le rayon de regard. |
+| **AM-10b** | ⚠️ partiel | Correction manuelle de la géométrie livrée. L'assistant guidé « quatre coins » **n'est pas fait** : sans matériel, impossible de vérifier que la tolérance déduite est saine. |
+| **AM-19** | ⚠️ partiel | Le README dit enfin quelle plateforme est packagée et ce qui diffère ailleurs. Le packaging macOS/Linux lui-même reste à faire. |
+
+Reste ouvert : l'assistant de calibration guidé, le packaging macOS/Linux, et
+toute la validation matérielle (§8). Le reste de ce document est l'analyse
+d'origine, conservée telle quelle comme référence.
 
 ---
 
