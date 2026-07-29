@@ -200,3 +200,62 @@ def test_reduced_motion_shortens_view_durations(qml) -> None:
     h.load("StatusView.qml")
     h.theme.setProperty("reduced_motion", True)
     assert h.theme.duration("veil_settle") < 420
+
+
+# --------------------------------------------------------------------------- #
+# updates: the install button exists only for a release we can verify (AM-3/AM-4)
+# --------------------------------------------------------------------------- #
+class _FakeInfo:
+    def __init__(self, sha: str | None) -> None:
+        self.version = "v9.9.9"
+        self.notes = "notes"
+        self.html_url = "https://github.com/x/releases/v9.9.9"
+        self.installer_url = "https://github.com/x/NexShieldVeil-Setup.exe"
+        self.installer_sha256 = sha
+
+    @property
+    def can_auto_install(self) -> bool:
+        return bool(self.installer_url) and bool(self.installer_sha256)
+
+
+def test_update_view_shows_the_current_version_when_idle(qml) -> None:
+    h = qml()
+    root = h.load("UpdateView.qml")
+    assert _find(root, "updateHeadline").property("text") == h.updates.property("headline")
+    assert _find(root, "checkButton").property("enabled") is True
+    assert _find(root, "installButton").property("visible") is False
+
+
+def test_update_view_offers_the_install_for_a_verifiable_release(qml) -> None:
+    h = qml()
+    root = h.load("UpdateView.qml")
+    h.updates.report_result(_FakeInfo("a" * 64))
+    assert _find(root, "installButton").property("visible") is True
+    assert _find(root, "pageButton").property("visible") is True
+    assert "v9.9.9" in _find(root, "updateHeadline").property("text")
+
+
+def test_update_view_hides_the_install_when_nothing_can_be_verified(qml) -> None:
+    h = qml()
+    root = h.load("UpdateView.qml")
+    h.updates.report_result(_FakeInfo(None))
+    # No verifiable installer: no one-click install, but the release page stays
+    # reachable and the reason is spelled out rather than silently hidden.
+    assert _find(root, "installButton").property("visible") is False
+    assert _find(root, "pageButton").property("visible") is True
+    assert _find(root, "updateDetail").property("text").strip()
+
+
+def test_update_view_disables_actions_while_busy(qml) -> None:
+    h = qml()
+    root = h.load("UpdateView.qml")
+    h.updates.check()  # -> checking (the shell would start the thread)
+    assert _find(root, "checkButton").property("enabled") is False
+
+
+def test_update_view_check_button_triggers_the_intent(qml, record) -> None:
+    h = qml()
+    root = h.load("UpdateView.qml")
+    requests = record(h.updates.check_requested)
+    _find(root, "checkButton").clicked.emit()
+    assert requests == [()]

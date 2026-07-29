@@ -44,6 +44,45 @@ class ProtectionState(Enum):
     CAMERA_ERROR = "camera_error"  # something needs the user's attention
 
 
+class UpdateState(Enum):
+    """Where the (optional) update check currently stands.
+
+    ``MANUAL_ONLY`` is the honest middle ground introduced with AM-4: a newer
+    release exists, but it ships no verifiable installer — so the app offers the
+    release page instead of running an executable it could not check.
+    """
+
+    IDLE = "idle"
+    CHECKING = "checking"
+    UP_TO_DATE = "up_to_date"
+    AVAILABLE = "available"  # newer release WITH a verifiable installer
+    MANUAL_ONLY = "manual_only"  # newer release, but nothing we can verify
+    DOWNLOADING = "downloading"
+    FAILED = "failed"
+
+
+# The update surface's headline, one key per state.
+_UPDATE_HEADLINE_KEYS = {
+    UpdateState.IDLE: "update.idle",
+    UpdateState.CHECKING: "update.checking",
+    UpdateState.UP_TO_DATE: "update.up_to_date",
+    UpdateState.AVAILABLE: "update.available",
+    UpdateState.MANUAL_ONLY: "update.manual_only",
+    UpdateState.DOWNLOADING: "update.downloading",
+    UpdateState.FAILED: "update.failed",
+}
+
+
+def update_headline_key(state: UpdateState) -> str:
+    """Translation key for the update surface's headline."""
+    return _UPDATE_HEADLINE_KEYS[state]
+
+
+def update_is_busy(state: UpdateState) -> bool:
+    """Whether an update operation is in flight (buttons must be disabled)."""
+    return state in (UpdateState.CHECKING, UpdateState.DOWNLOADING)
+
+
 class CameraError(Enum):
     """Why the camera/detection path cannot run. Each maps to an actionable message."""
 

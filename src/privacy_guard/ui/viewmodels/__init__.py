@@ -14,6 +14,7 @@ from privacy_guard.ui.viewmodels.onboarding import OnboardingViewModel
 from privacy_guard.ui.viewmodels.settings import SettingsViewModel
 from privacy_guard.ui.viewmodels.status import StatusViewModel
 from privacy_guard.ui.viewmodels.tray import TrayViewModel
+from privacy_guard.ui.viewmodels.updates import UpdatesViewModel
 
 __all__ = [
     "AboutViewModel",
@@ -22,4 +23,5 @@ __all__ = [
     "SettingsViewModel",
     "StatusViewModel",
     "TrayViewModel",
+    "UpdatesViewModel",
 ]

@@ -1,6 +1,5 @@
 {
   "app.name": "NexShieldVeil",
-
   "status.protected.headline": "Protected",
   "status.clear.headline": "Clear",
   "status.paused.headline": "Paused",
@@ -10,11 +9,9 @@
   "status.clear.engaging": "Observer spotted…",
   "status.paused.detail": "Watching is paused. Your screen is not being watched.",
   "status.snoozed.detail": "Timed pause: watching will resume on its own. Until then, your screen is not being watched.",
-
   "camera.active": "Camera on",
   "camera.inactive": "Camera off",
   "faces.count": "Faces seen: {count}",
-
   "error.no_camera.detail": "No camera found. Plug in a webcam to start watching.",
   "error.no_camera.action": "Try again",
   "error.disconnected.detail": "The camera was disconnected. Watching is paused.",
@@ -25,7 +22,6 @@
   "error.permission_denied.action": "Open system settings",
   "error.model_unavailable.detail": "The detection model is missing. Watching cannot see any face.",
   "error.model_unavailable.action": "Open the docs",
-
   "action.pause": "Pause",
   "action.resume": "Resume watching",
   "action.snooze": "Pause for {minutes} min",
@@ -33,10 +29,8 @@
   "action.about": "About & limits",
   "action.quit": "Quit",
   "action.open": "Open",
-
   "common.next": "Next",
   "common.back": "Back",
-
   "onboarding.step1.title": "NexShieldVeil draws a veil over your screen",
   "onboarding.step1.body": "It watches your webcam and, as soon as a face other than yours looks at your screen, covers the content with a veil — then lifts it once they look away.",
   "onboarding.limits.title": "What it does not protect against",
@@ -49,7 +43,6 @@
   "onboarding.step3.masking": "Masking style",
   "onboarding.step3.startup": "Start at login",
   "onboarding.finish": "Finish",
-
   "settings.title": "Settings",
   "settings.tab.detection": "Detection",
   "settings.tab.masking": "Masking",
@@ -75,7 +68,6 @@
   "settings.theme.light": "Light",
   "language.fr": "Français",
   "language.en": "English",
-
   "preview.title": "Camera preview",
   "preview.show": "Show the camera",
   "preview.hide": "Hide the camera",
@@ -84,27 +76,22 @@
   "preview.legend.primary": "You (primary)",
   "preview.legend.observer": "Looking at the screen",
   "preview.legend.idle": "Not looking",
-
   "main.title": "NexShieldVeil",
   "main.subtitle": "Anti shoulder-surfing shield",
-
   "masking.veil": "Opaque veil",
   "masking.blur": "Blur",
   "masking.pixelate": "Pixelate",
   "masking.coming_soon": "soon",
   "overlay.title": "Content hidden",
   "overlay.subtitle": "Someone else is looking at your screen",
-
   "sensitivity.strict": "strict",
   "sensitivity.balanced": "balanced",
   "sensitivity.wide": "wide",
   "sensitivity.very_wide": "very wide",
-
   "unit.deg": "{value}°",
   "unit.ms": "{value} ms",
   "unit.px": "{value} px",
   "unit.blocks": "{value} blocks",
-
   "about.title": "About & limits",
   "about.version": "Version {version}",
   "about.tagline": "Reduces the risk of shoulder surfing, it does not remove it.",
@@ -116,5 +103,22 @@
   "about.limits.3": "The brief moment before the veil settles.",
   "about.limits.4": "Reflections: glass, glossy surfaces, glasses.",
   "about.limits.5": "A long-range zoom lens, from a distance.",
-  "about.license": "MIT license."
+  "about.license": "MIT license.",
+  "update.idle": "Updates",
+  "update.idle.detail": "Check whether a newer version is available. No data is sent.",
+  "update.checking": "Checking…",
+  "update.up_to_date": "You are on the latest version",
+  "update.up_to_date.detail": "Nothing to install right now.",
+  "update.available": "Version {version} available",
+  "update.available.detail": "The installer published with this release is checked against its SHA-256 before it is ever run.",
+  "update.manual_only": "Version {version} available",
+  "update.manual_only.detail": "Automatic install unavailable: this release publishes no verifiable installer. Use the release page instead.",
+  "update.downloading": "Downloading…",
+  "update.failed": "Check failed",
+  "update.failed.detail": "Failed: {error}",
+  "update.action.check": "Check now",
+  "update.action.install": "Download and install",
+  "update.action.page": "Open the release page",
+  "update.auto_check": "Check at startup",
+  "action.updates": "Updates"
 }

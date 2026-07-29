@@ -37,6 +37,7 @@ VIEWS: tuple[str, ...] = (
     "OnboardingView.qml",
     "SettingsView.qml",
     "CameraView.qml",
+    "UpdateView.qml",
     "MainView.qml",
 )
 
@@ -50,7 +51,8 @@ def install_context(context: QQmlContext, **objects: QObject | None) -> None:
     """Expose controller/translator/theme/view-models to QML under fixed names.
 
     Recognised keys: ``theme``, ``translator``, ``status``, ``settings``,
-    ``onboarding``, ``about``, ``tray``. ``None`` values are skipped.
+    ``onboarding``, ``about``, ``tray``, ``camera``, ``updates``. ``None`` values
+    are skipped.
     """
     mapping = {
         "theme": "Theme",
@@ -61,6 +63,7 @@ def install_context(context: QQmlContext, **objects: QObject | None) -> None:
         "about": "aboutVM",
         "tray": "trayVM",
         "camera": "cameraVM",
+        "updates": "updatesVM",
     }
     for key, qml_name in mapping.items():
         obj = objects.get(key)

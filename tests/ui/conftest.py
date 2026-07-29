@@ -35,6 +35,7 @@ from privacy_guard.ui.viewmodels import (
     SettingsViewModel,
     StatusViewModel,
     TrayViewModel,
+    UpdatesViewModel,
 )
 
 
@@ -61,6 +62,7 @@ class QmlHarness:
         self.onboarding = OnboardingViewModel(self.controller, self.translator)
         self.about = AboutViewModel(self.translator)
         self.tray = TrayViewModel(self.controller, self.translator)
+        self.updates = UpdatesViewModel(self.translator)
         self.provider = CameraImageProvider()
         self.camera = CameraViewModel(self.controller, self.translator, self.provider)
         self.engine = QQmlEngine()
@@ -76,6 +78,7 @@ class QmlHarness:
             about=self.about,
             tray=self.tray,
             camera=self.camera,
+            updates=self.updates,
         )
         self._kept: list[object] = []
 

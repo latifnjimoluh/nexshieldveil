@@ -37,6 +37,7 @@ import re
 import ssl
 import tempfile
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
@@ -160,14 +161,14 @@ def installer_download_dir() -> str:
 class _TrustedRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Refuses any redirect that leaves the allowed GitHub hosts."""
 
-    def redirect_request(
+    def redirect_request(  # urllib fixes this signature; we only inspect `newurl`
         self,
-        req,
-        fp,
-        code,
-        msg,
-        headers,
-        newurl,  # noqa: ANN001 - urllib's fixed signature
+        req: urllib.request.Request,
+        fp: object,
+        code: int,
+        msg: str,
+        headers: Mapping[str, str],
+        newurl: str,
     ) -> urllib.request.Request | None:
         """Follow the redirect only if it stays on an allowed GitHub host."""
         if not is_trusted_asset_url(newurl):

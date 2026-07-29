@@ -41,6 +41,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
         SettingsViewModel,
         StatusViewModel,
         TrayViewModel,
+        UpdatesViewModel,
     )
 
     QGuiApplication.instance() or QGuiApplication([])
@@ -58,6 +59,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
         "about": AboutViewModel(translator),
         "tray": TrayViewModel(controller, translator),
         "camera": CameraViewModel(controller, translator, provider),
+        "updates": UpdatesViewModel(translator),
     }
     engine = QQmlEngine()
     engine.addImageProvider(CameraImageProvider.PROVIDER_ID, provider)
@@ -127,7 +129,13 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     from privacy_guard.ui.qml_app import install_context, view_url
     from privacy_guard.ui.theme.theme_controller import ThemeController
     from privacy_guard.ui.translator import Translator
-    from privacy_guard.ui.updater_ui import shield_icon
+    from privacy_guard.ui.updater_ui import (
+        UpdateCheckThread,
+        UpdateDownloadThread,
+        auto_check_enabled,
+        set_auto_check_enabled,
+        shield_icon,
+    )
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
         CameraViewModel,
@@ -135,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         SettingsViewModel,
         StatusViewModel,
         TrayViewModel,
+        UpdatesViewModel,
     )
 
     logging.basicConfig(level=logging.INFO)
@@ -180,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     about_vm = AboutViewModel(translator)
     tray_vm = TrayViewModel(controller, translator)
     camera_vm = CameraViewModel(controller, translator, provider)
+    updates_vm = UpdatesViewModel(translator, auto_check=auto_check_enabled())
 
     translator.language_changed.connect(lambda: settings.setValue("language", translator.language))
     # A language switch must reach the overlay too, not just the windows.
@@ -205,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
                 about=about_vm,
                 tray=tray_vm,
                 camera=camera_vm,
+                updates=updates_vm,
             )
             v.setColor(theme.base)
             v.setResizeMode(QQuickView.ResizeMode.SizeRootObjectToView)
@@ -235,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     act_settings.triggered.connect(lambda: show_window("settings", "SettingsView.qml", 600, 660))
     act_about = menu.addAction(tray_vm.property("about_label"))
     act_about.triggered.connect(lambda: show_window("about", "AboutView.qml", 500, 540))
+    act_updates = menu.addAction(translator.tr_key("action.updates"))
+    act_updates.triggered.connect(lambda: show_window("updates", "UpdateView.qml", 500, 480))
     menu.addSeparator()
     act_quit = menu.addAction(tray_vm.property("quit_label"))
     act_quit.triggered.connect(app.quit)
@@ -247,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         act_status.setText(translator.tr_key("action.open"))
         act_settings.setText(tray_vm.property("settings_label"))
         act_about.setText(tray_vm.property("about_label"))
+        act_updates.setText(translator.tr_key("action.updates"))
         act_quit.setText(tray_vm.property("quit_label"))
         tray.setToolTip(tray_vm.property("tooltip"))
 
@@ -279,6 +293,51 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
 
     status_vm.action_requested.connect(on_error_action)
 
+    # ---- updates (AM-3): the QML app finally has the updater the classic ----- #
+    # window had. The view-model holds no network and no thread; the shell owns
+    # both, and hands results back on the UI thread through queued signals.
+    update_threads: dict[str, object] = {}
+
+    def run_update_check() -> None:
+        thread = UpdateCheckThread(app)
+        thread.found.connect(updates_vm.report_result)
+        thread.failed.connect(updates_vm.report_failed)
+        update_threads["check"] = thread  # keep referenced while it runs
+        thread.start()
+
+    def run_update_download(url: str, expected_sha256: str) -> None:
+        from pathlib import Path as _Path
+
+        from privacy_guard.update import installer_download_dir
+
+        dest = str(_Path(installer_download_dir()) / "NexShieldVeil-Setup.exe")
+        thread = UpdateDownloadThread(url, dest, expected_sha256)
+        thread.progressed.connect(updates_vm.report_progress)
+        thread.downloaded.connect(updates_vm.report_downloaded)
+        thread.failed.connect(updates_vm.report_failed)
+        update_threads["download"] = thread
+        thread.start()
+
+    def launch_update(path: str) -> None:
+        # Only ever reached for a file `download_installer` verified against the
+        # release's published SHA-256 (AM-4).
+        from privacy_guard.update import launch_installer
+
+        launch_installer(path)
+        app.quit()
+
+    def open_release_page(url: str) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        QDesktopServices.openUrl(QUrl(url))
+
+    updates_vm.check_requested.connect(run_update_check)
+    updates_vm.install_requested.connect(run_update_download)
+    updates_vm.launch_requested.connect(launch_update)
+    updates_vm.page_requested.connect(open_release_page)
+    updates_vm.auto_check_changed.connect(set_auto_check_enabled)
+
     def open_main() -> None:
         show_window("main", "MainView.qml", 480, 460)
 
@@ -297,6 +356,14 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         # Background protection starts; the camera *preview* stays off until requested.
         controller.enable()
         open_main()
+
+    # Deferred startup check (opt-out): protection must come up first — a network
+    # round-trip is never allowed to delay the camera starting. Silent unless
+    # something is found; the user sees the result in the Updates window.
+    if updates_vm.property("auto_check"):
+        from PySide6.QtCore import QTimer
+
+        QTimer.singleShot(30_000, updates_vm.check)
 
     return int(app.exec())
 

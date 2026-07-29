@@ -42,6 +42,13 @@ def auto_check_enabled() -> bool:
     return bool(settings.value(_AUTO_CHECK_KEY, True, type=bool))
 
 
+def set_auto_check_enabled(enabled: bool) -> None:
+    """Persist the 'check on startup' preference (shared by both UIs)."""
+    if not _QT_AVAILABLE:  # pragma: no cover
+        return
+    QSettings(_ORG, _APP).setValue(_AUTO_CHECK_KEY, bool(enabled))
+
+
 if _QT_AVAILABLE:  # pragma: no cover - requires a display
 
     def shield_icon(size: int = 64) -> QIcon:
