@@ -37,7 +37,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
 
-      - name: Install (locked: core + dev + UI; PySide6 for headless QML/view-model tests)
+      - name: "Install (locked): core + dev + UI, PySide6 for headless QML tests"
         run: |
           # Refresh build tooling too: the runner ships an old setuptools whose
           # deprecated package_index has known CVEs and would trip pip-audit.
@@ -86,7 +86,7 @@ jobs:
       - name: Privacy guarantees (no network / no frame persistence)
         run: pytest -m privacy -v
 
-      - name: QML selfcheck (assembled wiring: engine + context + view-models)
+      - name: "QML selfcheck (assembled wiring: engine + context + view-models)"
         # The unit tests instantiate each view against a fake context; this loads
         # them through the real shell entry point, which is what a frozen build
         # runs. It catches wiring regressions no view-model test can see.
@@ -95,3 +95,49 @@ jobs:
       - name: Performance benchmarks
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         run: pytest -m performance -v
+
+  real-adapters:
+    name: Real adapters (vision extras, non-blocking)
+    runs-on: ubuntu-latest
+    # AM-17: the matrix above never installs [vision], so opencv_sources and
+    # mediapipe_detector are imported by nothing — a regression in either would
+    # surface only when someone runs the app by hand. This job loads them for
+    # real. Non-blocking on purpose: it depends on heavy third-party wheels whose
+    # availability we do not control, and it must inform rather than gate.
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    env:
+      QT_QPA_PLATFORM: offscreen
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Linux libraries (Qt offscreen + OpenCV)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libglib2.0-0
+
+      - name: Install with the vision extras
+        # Deliberately unpinned: this job's value is telling us early when a new
+        # OpenCV/MediaPipe release breaks the adapters. Pinning it would hide
+        # exactly what it exists to find.
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -e ".[dev,vision,ui]"
+
+      - name: Full suite with the real adapters loaded
+        # No model file is fetched: MediaPipe inference stays out of CI (the app
+        # never downloads a model, and neither should the pipeline that tests it).
+        # What runs here is every test the vision extras un-skip — real video
+        # decoding, real downscaling, the detector's degradation path.
+        run: pytest -m "not slow and not requires_hardware" -q
+
+      - name: Privacy guarantees with the real decoder in the loop
+        run: pytest -m privacy -v
