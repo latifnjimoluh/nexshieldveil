@@ -204,3 +204,25 @@ def test_snapshot_from_config_mirrors_the_smoothing() -> None:
         update={"tracking": cfg.tracking.model_copy(update={"smoothing_alpha": 0.75})}
     )
     assert snapshot_from_config(cfg).smoothing_alpha == 0.75
+
+
+def test_a_corrected_screen_size_reaches_the_worker(qapp) -> None:
+    # AM-10b: the correction must apply without restarting the app.
+    snap = UiSnapshot(
+        screen_width_mm=290.0,
+        screen_height_mm=170.0,
+        camera_above_mm=30.0,
+        screen_size_manual=True,
+    )
+    geometry = app_config_from_snapshot(AppConfig(), snap).geometry
+    assert geometry.screen_width_mm == 290.0
+    assert geometry.screen_height_mm == 170.0
+    assert geometry.camera_above_screen_mm == 30.0
+
+
+def test_snapshot_from_config_mirrors_the_screen_geometry() -> None:
+    cfg = AppConfig()
+    cfg = cfg.model_copy(
+        update={"geometry": cfg.geometry.model_copy(update={"screen_width_mm": 344.0})}
+    )
+    assert snapshot_from_config(cfg).screen_width_mm == 344.0

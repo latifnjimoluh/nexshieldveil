@@ -11,6 +11,7 @@ import pytest
 
 from privacy_guard.ui.fake_controller import FakeController
 from privacy_guard.ui.persistence import PERSISTED_FIELDS, restore_settings, save_settings
+from privacy_guard.ui.state import UiSnapshot
 
 pytestmark = pytest.mark.unit
 
@@ -167,3 +168,47 @@ def test_hand_edited_release_below_trigger_keeps_the_invariant(ctrl: FakeControl
     restore_settings(ctrl, _store(trigger_ms=500, release_ms=200))
     assert ctrl.snapshot.trigger_ms == 500
     assert ctrl.snapshot.release_ms >= ctrl.snapshot.trigger_ms  # never a flickering config
+
+
+# --------------------------------------------------------------------------- #
+# screen geometry (AM-10b): persisted only when the user corrected it
+# --------------------------------------------------------------------------- #
+def test_a_measured_screen_size_is_not_frozen_into_the_store() -> None:
+    # Persisting a value that merely came from the OS would keep the old
+    # screen's size forever after plugging in a different monitor.
+    store = DictStore()
+    save_settings(UiSnapshot(screen_width_mm=290.0, screen_height_mm=170.0), store)
+    assert store.data["settings/screen_width_mm"] is None
+    assert store.data["settings/screen_height_mm"] is None
+
+
+def test_a_manual_correction_is_persisted_and_restored(ctrl: FakeController) -> None:
+    store = DictStore()
+    save_settings(
+        UiSnapshot(
+            screen_width_mm=345.0,
+            screen_height_mm=195.0,
+            camera_above_mm=25.0,
+            screen_size_manual=True,
+        ),
+        store,
+    )
+    assert store.data["settings/screen_width_mm"] == 345.0
+
+    restore_settings(ctrl, store)
+    assert ctrl.snapshot.screen_width_mm == 345.0
+    assert ctrl.snapshot.screen_height_mm == 195.0
+    assert ctrl.snapshot.camera_above_mm == 25.0
+    # Restoring a correction means it IS a correction.
+    assert ctrl.snapshot.screen_size_manual is True
+
+
+def test_resetting_the_correction_forgets_it(ctrl: FakeController) -> None:
+    store = DictStore()
+    save_settings(UiSnapshot(screen_width_mm=345.0, screen_size_manual=True), store)
+    # The user hits "measure again": the stored value must be cleared, not left
+    # behind to be restored on the next start.
+    save_settings(UiSnapshot(screen_width_mm=345.0, screen_size_manual=False), store)
+    restore_settings(ctrl, store)
+    assert ctrl.snapshot.screen_size_manual is False
+    assert ctrl.snapshot.screen_width_mm == UiSnapshot().screen_width_mm

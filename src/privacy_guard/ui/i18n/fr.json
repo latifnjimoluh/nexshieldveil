@@ -131,5 +131,13 @@
   "reactivity.instant": "immédiat (aucun lissage)",
   "reactivity.fast": "rapide",
   "reactivity.balanced": "équilibré",
-  "reactivity.smooth": "lissé"
+  "reactivity.smooth": "lissé",
+  "settings.screen.title": "Géométrie de l'écran",
+  "settings.screen.hint": "Sert à décider si un regard tombe sur ton écran. Mesurée auprès du système au démarrage ; corrige-la si elle est fausse — sur un petit écran, une taille surestimée rend la détection bien plus permissive que le curseur de sensibilité ne le laisse croire.",
+  "settings.screen.width": "Largeur (mm)",
+  "settings.screen.height": "Hauteur (mm)",
+  "settings.screen.camera_above": "Caméra au-dessus de l'écran (mm)",
+  "settings.screen.source.measured": "mesurée par le système",
+  "settings.screen.source.manual": "corrigée à la main",
+  "settings.screen.reset": "Remesurer au prochain démarrage"
 }

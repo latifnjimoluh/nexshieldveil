@@ -131,5 +131,13 @@
   "reactivity.instant": "instant (no smoothing)",
   "reactivity.fast": "fast",
   "reactivity.balanced": "balanced",
-  "reactivity.smooth": "smooth"
+  "reactivity.smooth": "smooth",
+  "settings.screen.title": "Screen geometry",
+  "settings.screen.hint": "Used to decide whether a gaze lands on your screen. Measured from the system at startup; correct it if it is wrong — on a small screen, an overestimated size makes detection far more permissive than the sensitivity slider suggests.",
+  "settings.screen.width": "Width (mm)",
+  "settings.screen.height": "Height (mm)",
+  "settings.screen.camera_above": "Camera above the screen (mm)",
+  "settings.screen.source.measured": "measured by the system",
+  "settings.screen.source.manual": "corrected by hand",
+  "settings.screen.reset": "Measure again on next start"
 }

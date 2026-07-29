@@ -271,3 +271,16 @@ def test_settings_exposes_the_walk_away_lock(qml) -> None:
     assert _find(root, "absenceLockSlider").property("visible") is False
     h.settings.set_absence_lock_enabled(True)
     assert _find(root, "absenceLockSlider").property("visible") is True
+
+
+def test_settings_exposes_the_screen_geometry_fields(qml) -> None:
+    h = qml()
+    root = h.load("SettingsView.qml")
+    for name in ("screenWidthField", "screenHeightField", "cameraAboveField"):
+        control = _find(root, name)
+        assert _accessible_name(control), f"{name} missing accessible name"
+    # The reset button only makes sense once a correction exists.
+    assert _find(root, "resetScreenSizeButton").property("visible") is False
+    h.settings.set_screen_width_mm(290.0)
+    assert _find(root, "resetScreenSizeButton").property("visible") is True
+    assert _find(root, "screenSourceLabel").property("text")

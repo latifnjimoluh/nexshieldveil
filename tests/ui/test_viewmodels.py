@@ -495,3 +495,57 @@ def test_the_clamped_smoothing_always_builds_a_valid_config(qapp) -> None:
 
     for alpha in SMOOTHING_ALPHA_RANGE:
         assert TrackingConfig(smoothing_alpha=alpha).smoothing_alpha == alpha
+
+
+# --------------------------------------------------------------------------- #
+# screen geometry correction (AM-10b)
+# --------------------------------------------------------------------------- #
+def test_the_screen_size_says_where_it_came_from(qapp) -> None:
+    # "measured" is worth trusting; "corrected by hand" is worth re-checking
+    # after a monitor change. Saying which is the whole point of the label.
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    measured = vm.property("screen_size_source")
+    assert vm.property("screen_size_manual") is False
+    vm.set_screen_width_mm(290.0)
+    assert vm.property("screen_size_manual") is True
+    assert vm.property("screen_size_source") != measured
+
+
+def test_geometry_edits_forward_and_clamp(qapp) -> None:
+    from privacy_guard.ui.state import CAMERA_ABOVE_MM_RANGE, SCREEN_WIDTH_MM_RANGE
+
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_screen_width_mm(290.0)
+    vm.set_screen_height_mm(170.0)
+    vm.set_camera_above_mm(25.0)
+    assert (controller.snapshot.screen_width_mm, controller.snapshot.screen_height_mm) == (
+        290.0,
+        170.0,
+    )
+    assert controller.snapshot.camera_above_mm == 25.0
+    controller.set_screen_width_mm(1.0)
+    assert controller.snapshot.screen_width_mm == SCREEN_WIDTH_MM_RANGE[0]
+    controller.set_camera_above_mm(-99_999.0)
+    assert controller.snapshot.camera_above_mm == CAMERA_ABOVE_MM_RANGE[0]
+
+
+def test_resetting_the_correction_clears_the_manual_flag(qapp) -> None:
+    controller = FakeController()
+    vm = SettingsViewModel(controller, Translator("fr"))
+    vm.set_screen_width_mm(290.0)
+    vm.reset_screen_size()
+    assert controller.snapshot.screen_size_manual is False
+    # The value stays until the next start measures again — the app does not
+    # silently jump back to a 24" assumption mid-session.
+    assert controller.snapshot.screen_width_mm == 290.0
+
+
+def test_the_clamped_geometry_always_builds_a_valid_config(qapp) -> None:
+    from privacy_guard.config import GeometryConfig
+    from privacy_guard.ui.state import SCREEN_HEIGHT_MM_RANGE, SCREEN_WIDTH_MM_RANGE
+
+    for width in SCREEN_WIDTH_MM_RANGE:
+        for height in SCREEN_HEIGHT_MM_RANGE:
+            assert GeometryConfig(screen_width_mm=width, screen_height_mm=height)

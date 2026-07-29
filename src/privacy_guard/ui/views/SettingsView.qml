@@ -265,6 +265,73 @@ Item {
 
                 Rectangle { width: parent.width; height: 1; color: Theme.line }
 
+                // ---- Screen geometry ---------------------------------- //
+                SectionTitle { text: Tr.t("settings.screen.title") }
+                FieldLabel {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Theme.fontSize("caption")
+                    text: Tr.t("settings.screen.hint")
+                }
+                Row {
+                    spacing: Theme.space("md")
+                    FieldLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Tr.t("settings.screen.width")
+                    }
+                    SpinBox {
+                        objectName: "screenWidthField"
+                        from: 150; to: 1500; stepSize: 5
+                        value: Math.round(settingsVM.screen_width_mm)
+                        Accessible.name: Tr.t("settings.screen.width")
+                        onValueModified: settingsVM.set_screen_width_mm(value)
+                    }
+                }
+                Row {
+                    spacing: Theme.space("md")
+                    FieldLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Tr.t("settings.screen.height")
+                    }
+                    SpinBox {
+                        objectName: "screenHeightField"
+                        from: 80; to: 900; stepSize: 5
+                        value: Math.round(settingsVM.screen_height_mm)
+                        Accessible.name: Tr.t("settings.screen.height")
+                        onValueModified: settingsVM.set_screen_height_mm(value)
+                    }
+                }
+                Row {
+                    spacing: Theme.space("md")
+                    FieldLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Tr.t("settings.screen.camera_above")
+                    }
+                    SpinBox {
+                        objectName: "cameraAboveField"
+                        from: -300; to: 300; stepSize: 5
+                        value: Math.round(settingsVM.camera_above_mm)
+                        Accessible.name: Tr.t("settings.screen.camera_above")
+                        onValueModified: settingsVM.set_camera_above_mm(value)
+                    }
+                }
+                Row {
+                    spacing: Theme.space("md")
+                    ValueLabel {
+                        objectName: "screenSourceLabel"
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: settingsVM.screen_size_source
+                    }
+                    PrimaryButton {
+                        objectName: "resetScreenSizeButton"
+                        text: Tr.t("settings.screen.reset")
+                        visible: settingsVM.screen_size_manual
+                        onClicked: settingsVM.reset_screen_size()
+                    }
+                }
+
+                Rectangle { width: parent.width; height: 1; color: Theme.line }
+
                 // ---- General ------------------------------------------ //
                 SectionTitle { text: Tr.t("settings.tab.general") }
 

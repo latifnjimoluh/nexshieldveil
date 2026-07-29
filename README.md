@@ -69,6 +69,29 @@ Détails : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
+## 💻 Plateformes
+
+| | État |
+|---|---|
+| **Windows** | **Packagé** — installeur `.exe` publié avec chaque release, empreinte SHA-256 jointe. Le chemin le plus testé. |
+| **macOS / Linux** | **Depuis les sources uniquement** (`pip install -e ".[vision,ui]"`). Tout fonctionne, mais il n'y a ni `.dmg` ni AppImage : il faut un Python et un venv. |
+
+Détails par plateforme, pour éviter les mauvaises surprises :
+
+- **Démarrage à la session** : Windows, Linux (XDG) et macOS (LaunchAgent).
+- **Suspension pendant qu'une session est verrouillée** : Windows et Linux (logind).
+  **Pas macOS** — la notification de verrouillage passe par une API native que
+  PySide6 n'expose pas ; la surveillance continue derrière l'écran de verrouillage.
+- **Flou / pixelisation** : reposent sur une capture d'écran locale. Sous **Wayland**
+  sans portail, la capture échoue et le masquage retombe sur le voile opaque — la
+  protection ne disparaît jamais, mais l'effet choisi n'est pas celui affiché.
+
+La CI exécute la suite complète sur Ubuntu, Windows et macOS ; ce qui n'est pas
+couvert automatiquement, ce sont les chemins qui demandent une vraie caméra ou un
+vrai écran (voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md)).
+
+---
+
 ## 📦 Installation
 
 Requiert **Python 3.11+**.

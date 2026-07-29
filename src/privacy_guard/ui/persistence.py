@@ -70,6 +70,15 @@ class SettingsSink(Protocol):
     def set_smoothing_alpha(self, alpha: float) -> None:  # noqa: D102
         ...
 
+    def set_screen_width_mm(self, mm: float) -> None:  # noqa: D102
+        ...
+
+    def set_screen_height_mm(self, mm: float) -> None:  # noqa: D102
+        ...
+
+    def set_camera_above_mm(self, mm: float) -> None:  # noqa: D102
+        ...
+
     def set_start_at_login(self, value: bool) -> None:  # noqa: D102
         ...
 
@@ -124,6 +133,12 @@ _FIELDS: tuple[tuple[str, Callable[[object], object | None], str], ...] = (
     ("release_ms", _as_int, "set_release_ms"),
     ("absence_lock_ms", _as_int, "set_absence_lock_ms"),
     ("smoothing_alpha", _as_float, "set_smoothing_alpha"),
+    # Geometry is restored ONLY when the user corrected it (see below): a value
+    # that merely came from the OS must stay live, or plugging in a different
+    # monitor would keep the old screen's size forever.
+    ("screen_width_mm", _as_float, "set_screen_width_mm"),
+    ("screen_height_mm", _as_float, "set_screen_height_mm"),
+    ("camera_above_mm", _as_float, "set_camera_above_mm"),
     ("start_at_login", _as_bool, "set_start_at_login"),
 )
 
@@ -135,9 +150,20 @@ the preview must stay opt-in per session, and errors must be re-derived live.
 """
 
 
+# Geometry is the one group whose *source* matters: a value the OS measured must
+# not be frozen into the store, or plugging in a different monitor would keep the
+# old screen's size forever. Only a correction the user typed is persisted.
+_GEOMETRY_FIELDS = ("screen_width_mm", "screen_height_mm", "camera_above_mm")
+
+
 def save_settings(snapshot: UiSnapshot, store: SettingsStore) -> None:
     """Write the user-adjustable fields of ``snapshot`` into ``store``."""
     for name in PERSISTED_FIELDS:
+        if name in _GEOMETRY_FIELDS and not snapshot.screen_size_manual:
+            # Clear rather than skip: resetting the correction must actually
+            # forget it, not leave the old value to be restored next time.
+            store.setValue(_PREFIX + name, None)
+            continue
         store.setValue(_PREFIX + name, getattr(snapshot, name))
 
 

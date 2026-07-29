@@ -25,7 +25,10 @@ from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from privacy_guard.ui.state import (
     ABSENCE_LOCK_MS_RANGE,
     BLUR_RADIUS_RANGE,
+    CAMERA_ABOVE_MM_RANGE,
     PIXELATE_BLOCKS_RANGE,
+    SCREEN_HEIGHT_MM_RANGE,
+    SCREEN_WIDTH_MM_RANGE,
     SENSITIVITY_DEG_RANGE,
     SMOOTHING_ALPHA_RANGE,
     SNOOZE_MINUTES_RANGE,
@@ -99,6 +102,9 @@ class AppController(QObject):
             "release_ms",
             "absence_lock_ms",
             "smoothing_alpha",
+            "screen_width_mm",
+            "screen_height_mm",
+            "camera_above_mm",
             "camera_index",
             "start_at_login",
         )
@@ -160,6 +166,18 @@ class AppController(QObject):
     def _get_smoothing_alpha(self) -> float:
         return self._snap.smoothing_alpha
 
+    def _get_screen_width_mm(self) -> float:
+        return self._snap.screen_width_mm
+
+    def _get_screen_height_mm(self) -> float:
+        return self._snap.screen_height_mm
+
+    def _get_camera_above_mm(self) -> float:
+        return self._snap.camera_above_mm
+
+    def _get_screen_size_manual(self) -> bool:
+        return self._snap.screen_size_manual
+
     def _get_start_at_login(self) -> bool:
         return self._snap.start_at_login
 
@@ -182,6 +200,10 @@ class AppController(QObject):
     camera_index = Property(int, _get_camera_index, notify=config_changed)
     absence_lock_ms = Property(int, _get_absence_lock_ms, notify=config_changed)
     smoothing_alpha = Property(float, _get_smoothing_alpha, notify=config_changed)
+    screen_width_mm = Property(float, _get_screen_width_mm, notify=config_changed)
+    screen_height_mm = Property(float, _get_screen_height_mm, notify=config_changed)
+    camera_above_mm = Property(float, _get_camera_above_mm, notify=config_changed)
+    screen_size_manual = Property(bool, _get_screen_size_manual, notify=config_changed)
     start_at_login = Property(bool, _get_start_at_login, notify=config_changed)
     preview_enabled = Property(bool, _get_preview_enabled, notify=preview_changed)
 
@@ -301,6 +323,29 @@ class AppController(QObject):
         """
         lo, hi = SMOOTHING_ALPHA_RANGE
         self._update(smoothing_alpha=min(hi, max(lo, float(alpha))))
+
+    @Slot(float)
+    def set_screen_width_mm(self, mm: float) -> None:
+        """Correct the modelled screen width; marks the geometry as user-set."""
+        lo, hi = SCREEN_WIDTH_MM_RANGE
+        self._update(screen_width_mm=min(hi, max(lo, float(mm))), screen_size_manual=True)
+
+    @Slot(float)
+    def set_screen_height_mm(self, mm: float) -> None:
+        """Correct the modelled screen height; marks the geometry as user-set."""
+        lo, hi = SCREEN_HEIGHT_MM_RANGE
+        self._update(screen_height_mm=min(hi, max(lo, float(mm))), screen_size_manual=True)
+
+    @Slot(float)
+    def set_camera_above_mm(self, mm: float) -> None:
+        """Correct how far the camera sits above the screen's top edge."""
+        lo, hi = CAMERA_ABOVE_MM_RANGE
+        self._update(camera_above_mm=min(hi, max(lo, float(mm))), screen_size_manual=True)
+
+    @Slot()
+    def reset_screen_size(self) -> None:
+        """Drop the manual correction and let the next start measure again."""
+        self._update(screen_size_manual=False)
 
     @Slot(int)
     def select_camera(self, index: int) -> None:

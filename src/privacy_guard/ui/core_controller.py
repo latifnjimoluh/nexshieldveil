@@ -46,6 +46,9 @@ def snapshot_from_config(config: AppConfig) -> UiSnapshot:
         absence_lock_ms=config.policy.absence_ms,
         smoothing_alpha=config.tracking.smoothing_alpha,
         camera_index=config.camera.device_index,
+        screen_width_mm=config.geometry.screen_width_mm,
+        screen_height_mm=config.geometry.screen_height_mm,
+        camera_above_mm=config.geometry.camera_above_screen_mm,
     )
 
 
@@ -77,7 +80,15 @@ def app_config_from_snapshot(config: AppConfig, snapshot: UiSnapshot) -> AppConf
                 **{**config.camera.model_dump(), "device_index": snapshot.camera_index}
             ),
             "geometry": GeometryConfig(
-                **{**config.geometry.model_dump(), "gaze_tolerance_deg": snapshot.sensitivity_deg}
+                **{
+                    **config.geometry.model_dump(),
+                    "gaze_tolerance_deg": snapshot.sensitivity_deg,
+                    # AM-10b: a correction typed by the user reaches the pipeline
+                    # like any other setting, without a restart of the app.
+                    "screen_width_mm": snapshot.screen_width_mm,
+                    "screen_height_mm": snapshot.screen_height_mm,
+                    "camera_above_screen_mm": snapshot.camera_above_mm,
+                }
             ),
             "policy": PolicyConfig(
                 trigger_ms=snapshot.trigger_ms,
@@ -388,6 +399,21 @@ class CoreController(AppController):
     def set_smoothing_alpha(self, alpha: float) -> None:  # pragma: no cover - hardware
         """Change the EMA smoothing and (debounced) apply it to the live pipeline."""
         super().set_smoothing_alpha(alpha)
+        self._schedule_worker_restart()
+
+    def set_screen_width_mm(self, mm: float) -> None:  # pragma: no cover - hardware
+        """Correct the screen width and (debounced) apply it to the live pipeline."""
+        super().set_screen_width_mm(mm)
+        self._schedule_worker_restart()
+
+    def set_screen_height_mm(self, mm: float) -> None:  # pragma: no cover - hardware
+        """Correct the screen height and (debounced) apply it to the live pipeline."""
+        super().set_screen_height_mm(mm)
+        self._schedule_worker_restart()
+
+    def set_camera_above_mm(self, mm: float) -> None:  # pragma: no cover - hardware
+        """Correct the camera offset and (debounced) apply it to the live pipeline."""
+        super().set_camera_above_mm(mm)
         self._schedule_worker_restart()
 
     # ---- masking edits take effect live on the overlay ------------------- #

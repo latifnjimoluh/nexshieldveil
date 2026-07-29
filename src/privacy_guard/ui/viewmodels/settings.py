@@ -122,6 +122,29 @@ class SettingsViewModel(QObject):
             )
         return options
 
+    # ---- screen geometry (AM-10b): correcting what the OS reported -------- #
+    def _get_screen_width_mm(self) -> float:
+        return self._c.snapshot.screen_width_mm
+
+    def _get_screen_height_mm(self) -> float:
+        return self._c.snapshot.screen_height_mm
+
+    def _get_camera_above_mm(self) -> float:
+        return self._c.snapshot.camera_above_mm
+
+    def _get_screen_size_manual(self) -> bool:
+        return self._c.snapshot.screen_size_manual
+
+    def _get_screen_size_source(self) -> str:
+        # Say where the number came from: "measured" is worth trusting, a manual
+        # correction is worth re-checking after a monitor change.
+        key = (
+            "settings.screen.source.manual"
+            if self._get_screen_size_manual()
+            else ("settings.screen.source.measured")
+        )
+        return self._tr.tr_key(key)
+
     # ---- camera / general ----------------------------------------------- #
     def _get_camera_index(self) -> int:
         return self._c.snapshot.camera_index
@@ -167,6 +190,11 @@ class SettingsViewModel(QObject):
     blur_radius_caption = Property(str, _get_blur_radius_caption, notify=changed)
     pixelate_blocks = Property(int, _get_pixelate_blocks, notify=changed)
     pixelate_blocks_caption = Property(str, _get_pixelate_blocks_caption, notify=changed)
+    screen_width_mm = Property(float, _get_screen_width_mm, notify=changed)
+    screen_height_mm = Property(float, _get_screen_height_mm, notify=changed)
+    camera_above_mm = Property(float, _get_camera_above_mm, notify=changed)
+    screen_size_manual = Property(bool, _get_screen_size_manual, notify=changed)
+    screen_size_source = Property(str, _get_screen_size_source, notify=changed)
     camera_index = Property(int, _get_camera_index, notify=changed)
     start_at_login = Property(bool, _get_start_at_login, notify=changed)
     start_at_login_supported = Property(bool, _get_start_at_login_supported, notify=changed)
@@ -227,6 +255,26 @@ class SettingsViewModel(QObject):
     def set_pixelate_blocks(self, blocks: int) -> None:
         """Update the pixelation block count (clamped to the config bounds)."""
         self._c.set_pixelate_blocks(blocks)
+
+    @Slot(float)
+    def set_screen_width_mm(self, mm: float) -> None:
+        """Correct the modelled screen width."""
+        self._c.set_screen_width_mm(mm)
+
+    @Slot(float)
+    def set_screen_height_mm(self, mm: float) -> None:
+        """Correct the modelled screen height."""
+        self._c.set_screen_height_mm(mm)
+
+    @Slot(float)
+    def set_camera_above_mm(self, mm: float) -> None:
+        """Correct how far the camera sits above the screen."""
+        self._c.set_camera_above_mm(mm)
+
+    @Slot()
+    def reset_screen_size(self) -> None:
+        """Forget the correction and let the next start measure the screen again."""
+        self._c.reset_screen_size()
 
     @Slot(int)
     def select_camera(self, index: int) -> None:

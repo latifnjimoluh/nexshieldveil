@@ -35,6 +35,11 @@ ABSENCE_LOCK_DEFAULT_MS = 10_000
 # EMA smoothing on the observer signal (AM-11). Mirrors TrackingConfig bounds
 # (0 < alpha <= 1); the UI slider only offers the useful upper half.
 SMOOTHING_ALPHA_RANGE = (0.1, 1.0)
+# Screen geometry the user can correct when the OS reading is wrong or absent
+# (AM-10b). Mirrors GeometryConfig (> 0) with bounds a real display fits in.
+SCREEN_WIDTH_MM_RANGE = (150.0, 1500.0)
+SCREEN_HEIGHT_MM_RANGE = (80.0, 900.0)
+CAMERA_ABOVE_MM_RANGE = (-300.0, 300.0)
 
 
 class ProtectionState(Enum):
@@ -163,6 +168,13 @@ class UiSnapshot:
     # reactive. Lower values cost latency ON TOP of trigger_ms.
     smoothing_alpha: float = 0.4
     camera_index: int = 0
+    # Screen geometry the decision is modelled on. Auto-detected at startup
+    # unless the user corrected it — `screen_size_manual` is what tells the two
+    # apart, so a corrected value survives while a detected one stays live.
+    screen_width_mm: float = 520.0
+    screen_height_mm: float = 290.0
+    camera_above_mm: float = 10.0
+    screen_size_manual: bool = False
     start_at_login: bool = False
     # UI-only: whether the live camera preview (what the camera sees + detections) is
     # shown. Off by default — the preview is strictly opt-in.
