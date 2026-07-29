@@ -125,7 +125,11 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
         from pathlib import Path
 
         from privacy_guard.app import PrivacyGuardPipeline
-        from privacy_guard.capture import ResilientFrameSource, WebcamFrameSource
+        from privacy_guard.capture import (
+            DownscaledFrameSource,
+            ResilientFrameSource,
+            WebcamFrameSource,
+        )
         from privacy_guard.overlay import RecordingRenderer
         from privacy_guard.vision import MediaPipeFaceDetector, mediapipe_available
 
@@ -150,11 +154,16 @@ class _PipelineWorker(QThread):  # pragma: no cover - requires camera/model
         # Survive suspend/resume and unplugs: failed reads trigger an automatic
         # close/reopen with backoff instead of killing this loop (M-R1). The
         # wrapper polls our stop flag, so pausing/quitting stays responsive.
-        source = ResilientFrameSource(
-            webcam,
-            reopen=lambda: WebcamFrameSource(self._config.camera.device_index),
-            should_abort=lambda: self._stop,
-            on_health=self._on_source_health,
+        # Outside it, the downscaler shrinks frames to the configured width
+        # before inference — the single biggest CPU lever here (AM-12).
+        source = DownscaledFrameSource(
+            ResilientFrameSource(
+                webcam,
+                reopen=lambda: WebcamFrameSource(self._config.camera.device_index),
+                should_abort=lambda: self._stop,
+                on_health=self._on_source_health,
+            ),
+            self._config.camera.downscale_width,
         )
 
         # The worker decides; the UI thread paints the overlay from the emitted result.

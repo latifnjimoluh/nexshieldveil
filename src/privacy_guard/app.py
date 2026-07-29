@@ -204,7 +204,12 @@ def build_runtime_components(
     so the application never crashes; it simply cannot detect observers until the
     camera and model are available.
     """
-    from privacy_guard.capture import ResilientFrameSource, WebcamFrameSource, opencv_available
+    from privacy_guard.capture import (
+        DownscaledFrameSource,
+        ResilientFrameSource,
+        WebcamFrameSource,
+        opencv_available,
+    )
     from privacy_guard.overlay import build_qt_masking_renderer, qt_available
     from privacy_guard.vision import (
         MediaPipeFaceDetector,
@@ -215,11 +220,15 @@ def build_runtime_components(
     source: FrameSource
     if config.camera.enabled and opencv_available():
         try:
-            # Wrapped so suspend/resume or an unplugged cable reconnects by
-            # itself instead of ending the run loop (M-R1).
-            source = ResilientFrameSource(
-                WebcamFrameSource(config.camera.device_index),
-                reopen=lambda: WebcamFrameSource(config.camera.device_index),
+            # Two wrappers, outermost last: the resilient one keeps the loop alive
+            # across suspend/unplug (M-R1), and the downscaler shrinks every frame
+            # — including those from a reconnected camera — before inference (AM-12).
+            source = DownscaledFrameSource(
+                ResilientFrameSource(
+                    WebcamFrameSource(config.camera.device_index),
+                    reopen=lambda: WebcamFrameSource(config.camera.device_index),
+                ),
+                config.camera.downscale_width,
             )
         except RuntimeError:
             logger.warning("Webcam unavailable; running without live capture.")

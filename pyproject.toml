@@ -117,6 +117,8 @@ module = [
     "privacy_guard.overlay.compositor",
     # Pure camera-reconnection logic (M-R1).
     "privacy_guard.capture.resilience",
+    # Pure frame-downscaling logic (AM-12).
+    "privacy_guard.capture.downscale",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
