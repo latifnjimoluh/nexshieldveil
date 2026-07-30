@@ -1,7 +1,6 @@
 // Updates: current version, check, and — only for a release whose installer we can
 // verify — the one-click install. Binds to `updatesVM`, `Theme`, `Tr`.
 import QtQuick
-import QtQuick.Controls
 
 Item {
     id: root
@@ -45,7 +44,7 @@ Item {
                 font.pixelSize: Theme.fontSize("caption")
             }
 
-            ProgressBar {
+            ThemedProgressBar {
                 objectName: "updateProgress"
                 width: parent.width
                 visible: updatesVM.state_key === "downloading"
@@ -85,7 +84,7 @@ Item {
             Row {
                 spacing: Theme.space("sm")
 
-                CheckBox {
+                ThemedCheckBox {
                     objectName: "autoCheckBox"
                     checked: updatesVM.auto_check
                     Accessible.name: updatesVM.auto_check_label

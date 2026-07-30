@@ -114,7 +114,7 @@ Item {
                 ButtonGroup { id: obMasking }
                 Repeater {
                     model: settingsVM.masking_options
-                    delegate: RadioButton {
+                    delegate: ThemedRadioButton {
                         required property var modelData
                         text: modelData.label + (modelData.live ? "" : "  (" + modelData.note + ")")
                         enabled: modelData.live
@@ -134,7 +134,7 @@ Item {
                     font.family: Theme.fontUi
                     font.pixelSize: Theme.fontSize("caption")
                 }
-                CheckBox {
+                ThemedCheckBox {
                     objectName: "startAtLogin"
                     text: Tr.t("onboarding.step3.startup")
                     checked: settingsVM.start_at_login

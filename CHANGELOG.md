@@ -7,6 +7,17 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 Rappel de périmètre, valable pour toutes les versions : NexShieldVeil **réduit** le
 risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
+## [0.3.5] — 2026-07-30
+
+### Corrigé
+- Les contrôles interactifs (curseurs, cases à cocher, boutons radio, interrupteur,
+  champs numériques, liste déroulante, barre de progression) sont enfin habillés aux
+  couleurs de la marque. Ils affichaient jusqu'ici le style Qt Quick Controls Basic
+  brut — vert `#21be2b`/`#17a81a` et surfaces blanches — étranger à la palette
+  ardoise/aqua du reste de l'interface. C'était l'écart visuel le plus visible du
+  frontend. Chaque contrôle est désormais un composant `Themed*` dédié (piste
+  ardoise, remplissage aqua, poignée cerclée, focus visible) réutilisé partout.
+
 ## [0.3.4] — 2026-07-29
 
 ### Corrigé

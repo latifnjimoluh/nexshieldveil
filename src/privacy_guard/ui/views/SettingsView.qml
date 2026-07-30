@@ -55,7 +55,7 @@ Item {
                 Row {
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "sensitivitySlider"
                         width: parent.width * 0.7
                         from: 5; to: 40; stepSize: 1
@@ -79,7 +79,7 @@ Item {
                 Row {
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "triggerSlider"
                         width: parent.width * 0.7
                         from: 0; to: 2000; stepSize: 50
@@ -97,7 +97,7 @@ Item {
                 Row {
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "releaseSlider"
                         width: parent.width * 0.7
                         from: settingsVM.release_floor; to: 3000; stepSize: 50
@@ -110,7 +110,7 @@ Item {
                         text: settingsVM.release_caption
                     }
                 }
-                CheckBox {
+                ThemedCheckBox {
                     objectName: "absenceLockSwitch"
                     text: Tr.t("settings.absence_lock")
                     checked: settingsVM.absence_lock_enabled
@@ -121,7 +121,7 @@ Item {
                     width: parent.width
                     spacing: Theme.space("md")
                     visible: settingsVM.absence_lock_enabled
-                    Slider {
+                    ThemedSlider {
                         objectName: "absenceLockSlider"
                         width: parent.width * 0.7
                         from: settingsVM.absence_lock_min_ms; to: 120000; stepSize: 1000
@@ -145,7 +145,7 @@ Item {
                 Row {
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "reactivitySlider"
                         width: parent.width * 0.7
                         from: settingsVM.smoothing_alpha_min; to: 1.0; stepSize: 0.05
@@ -180,7 +180,7 @@ Item {
                 ButtonGroup { id: maskingGroup }
                 Repeater {
                     model: settingsVM.masking_options
-                    delegate: RadioButton {
+                    delegate: ThemedRadioButton {
                         required property var modelData
                         text: modelData.label + (modelData.live ? "" : "  (" + modelData.note + ")")
                         enabled: modelData.live
@@ -201,7 +201,7 @@ Item {
                 }
 
                 FieldLabel { text: Tr.t("settings.opacity") }
-                Slider {
+                ThemedSlider {
                     objectName: "opacitySlider"
                     width: parent.width * 0.7
                     from: 0; to: 1; stepSize: 0.01
@@ -218,7 +218,7 @@ Item {
                     visible: settingsVM.masking_strategy === "blur"
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "blurRadiusSlider"
                         width: parent.width * 0.7
                         // Bounds mirror config.models.MaskingConfig.blur_radius.
@@ -241,7 +241,7 @@ Item {
                     visible: settingsVM.masking_strategy === "pixelate"
                     width: parent.width
                     spacing: Theme.space("md")
-                    Slider {
+                    ThemedSlider {
                         objectName: "pixelateBlocksSlider"
                         width: parent.width * 0.7
                         // Bounds mirror config.models.MaskingConfig.pixelate_blocks.
@@ -279,7 +279,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("settings.screen.width")
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         objectName: "screenWidthField"
                         from: 150; to: 1500; stepSize: 5
                         value: Math.round(settingsVM.screen_width_mm)
@@ -293,7 +293,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("settings.screen.height")
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         objectName: "screenHeightField"
                         from: 80; to: 900; stepSize: 5
                         value: Math.round(settingsVM.screen_height_mm)
@@ -307,7 +307,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("settings.screen.camera_above")
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         objectName: "cameraAboveField"
                         from: -300; to: 300; stepSize: 5
                         value: Math.round(settingsVM.camera_above_mm)
@@ -335,7 +335,7 @@ Item {
                 // ---- General ------------------------------------------ //
                 SectionTitle { text: Tr.t("settings.tab.general") }
 
-                CheckBox {
+                ThemedCheckBox {
                     objectName: "startLoginSwitch"
                     text: Tr.t("settings.start_at_login")
                     checked: settingsVM.start_at_login
@@ -352,7 +352,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("settings.language")
                     }
-                    ComboBox {
+                    ThemedComboBox {
                         objectName: "languageCombo"
                         model: settingsVM.languages
                         textRole: "label"
@@ -372,7 +372,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("settings.theme")
                     }
-                    Switch {
+                    ThemedSwitch {
                         objectName: "themeSwitch"
                         checked: Theme.is_dark
                         text: Theme.is_dark ? Tr.t("settings.theme.dark") : Tr.t("settings.theme.light")
