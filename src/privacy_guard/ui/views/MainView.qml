@@ -1,7 +1,7 @@
 // The main window — surfaces every option on a real interface (not only the tray
 // menu): state, primary action, show/hide camera, settings, about, quit. The live
 // camera preview is embedded but OFF by default (revealed via the toggle).
-// Binds to statusVM, cameraVM, trayVM, Theme, Tr.
+// Binds to statusVM, cameraVM, trayVM, donateVM, Theme, Tr.
 import QtQuick
 
 Item {
@@ -100,6 +100,12 @@ Item {
                     primary: false
                     text: Tr.t("action.about")
                     onClicked: trayVM.open_about()
+                }
+                PrimaryButton {
+                    objectName: "donateButton"
+                    primary: false
+                    text: Tr.t("action.donate")
+                    onClicked: donateVM.open_window()
                 }
                 PrimaryButton {
                     objectName: "quitButton"

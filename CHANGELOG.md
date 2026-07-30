@@ -7,6 +7,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 Rappel de périmètre, valable pour toutes les versions : NexShieldVeil **réduit** le
 risque de regard indiscret, il ne le supprime pas. Voir [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
+## [0.3.6] — 2026-07-30
+
+### Ajouté
+- Volet « Faire un don » : un moyen facultatif de soutenir le projet. Accessible
+  depuis le menu de la barre d'état système et depuis la fenêtre principale, il
+  ouvre une page de paiement KPay hébergée dans le navigateur. L'application
+  n'effectue aucun appel réseau et ne voit jamais les informations de paiement —
+  le lien est simplement ouvert dans le navigateur au clic de l'utilisateur.
+
 ## [0.3.5] — 2026-07-30
 
 ### Corrigé

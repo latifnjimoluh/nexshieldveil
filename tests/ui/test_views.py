@@ -92,8 +92,23 @@ def test_status_view_camera_badge_tracks_activity(qml) -> None:
 def test_main_view_exposes_all_options(qml) -> None:
     h = qml()
     root = h.load("MainView.qml")
-    for name in ("primaryAction", "previewToggle", "settingsButton", "aboutButton", "quitButton"):
+    for name in (
+        "primaryAction",
+        "previewToggle",
+        "settingsButton",
+        "aboutButton",
+        "donateButton",
+        "quitButton",
+    ):
         assert _find(root, name) is not None
+
+
+def test_main_view_donate_button_requests_the_panel(qml, record) -> None:
+    h = qml()
+    root = h.load("MainView.qml")
+    requests = record(h.donate.window_requested)
+    _find(root, "donateButton").clicked.emit()
+    assert requests == [()]
 
 
 def test_main_view_camera_hidden_by_default(qml) -> None:
@@ -259,6 +274,18 @@ def test_update_view_check_button_triggers_the_intent(qml, record) -> None:
     requests = record(h.updates.check_requested)
     _find(root, "checkButton").clicked.emit()
     assert requests == [()]
+
+
+def test_donate_view_button_opens_the_payment_link(qml, record) -> None:
+    from privacy_guard.ui.viewmodels.donate import DONATION_URL
+
+    h = qml()
+    root = h.load("DonateView.qml")
+    requests = record(h.donate.donate_requested)
+    button = _find(root, "donateButton")
+    assert button.property("text") == h.donate.property("action_label")
+    button.clicked.emit()
+    assert requests == [(DONATION_URL,)]
 
 
 def test_settings_exposes_the_walk_away_lock(qml) -> None:

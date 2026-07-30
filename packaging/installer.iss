@@ -10,7 +10,7 @@
 ; anyone can install and run it.
 
 #define MyAppName "NexShieldVeil"
-#define MyAppVersion "0.3.5"
+#define MyAppVersion "0.3.6"
 #define MyAppExe "NexShieldVeil.exe"
 
 [Setup]

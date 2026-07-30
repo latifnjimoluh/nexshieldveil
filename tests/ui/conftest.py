@@ -32,6 +32,7 @@ from privacy_guard.ui.translator import Translator
 from privacy_guard.ui.viewmodels import (
     AboutViewModel,
     CameraViewModel,
+    DonateViewModel,
     OnboardingViewModel,
     SettingsViewModel,
     StatusViewModel,
@@ -64,6 +65,7 @@ class QmlHarness:
         self.about = AboutViewModel(self.translator)
         self.tray = TrayViewModel(self.controller, self.translator)
         self.updates = UpdatesViewModel(self.translator)
+        self.donate = DonateViewModel(self.translator)
         self.provider = CameraImageProvider()
         self.camera = CameraViewModel(self.controller, self.translator, self.provider)
         self.brand = Branding()
@@ -81,6 +83,7 @@ class QmlHarness:
             tray=self.tray,
             camera=self.camera,
             updates=self.updates,
+            donate=self.donate,
             brand=self.brand,
         )
         self._kept: list[object] = []

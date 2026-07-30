@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from privacy_guard.ui.viewmodels.about import AboutViewModel
 from privacy_guard.ui.viewmodels.camera import CameraViewModel
+from privacy_guard.ui.viewmodels.donate import DonateViewModel
 from privacy_guard.ui.viewmodels.onboarding import OnboardingViewModel
 from privacy_guard.ui.viewmodels.settings import SettingsViewModel
 from privacy_guard.ui.viewmodels.status import StatusViewModel
@@ -19,6 +20,7 @@ from privacy_guard.ui.viewmodels.updates import UpdatesViewModel
 __all__ = [
     "AboutViewModel",
     "CameraViewModel",
+    "DonateViewModel",
     "OnboardingViewModel",
     "SettingsViewModel",
     "StatusViewModel",

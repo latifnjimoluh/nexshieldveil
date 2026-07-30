@@ -38,6 +38,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
         CameraViewModel,
+        DonateViewModel,
         OnboardingViewModel,
         SettingsViewModel,
         StatusViewModel,
@@ -61,6 +62,7 @@ def _selfcheck() -> int:  # pragma: no cover - exercised via the frozen build sm
         "tray": TrayViewModel(controller, translator),
         "camera": CameraViewModel(controller, translator, provider),
         "updates": UpdatesViewModel(translator),
+        "donate": DonateViewModel(translator),
         "brand": Branding(),
     }
     engine = QQmlEngine()
@@ -144,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     from privacy_guard.ui.viewmodels import (
         AboutViewModel,
         CameraViewModel,
+        DonateViewModel,
         OnboardingViewModel,
         SettingsViewModel,
         StatusViewModel,
@@ -233,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     tray_vm = TrayViewModel(controller, translator)
     camera_vm = CameraViewModel(controller, translator, provider)
     updates_vm = UpdatesViewModel(translator, auto_check=auto_check_enabled())
+    donate_vm = DonateViewModel(translator)
     brand = Branding()
 
     translator.language_changed.connect(lambda: settings.setValue("language", translator.language))
@@ -260,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
                 tray=tray_vm,
                 camera=camera_vm,
                 updates=updates_vm,
+                donate=donate_vm,
                 brand=brand,
             )
             v.setColor(theme.base)
@@ -287,13 +292,15 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     act_snooze_long.triggered.connect(tray_vm.snooze_long)
     menu.addSeparator()
     act_status = menu.addAction(translator.tr_key("action.open"))
-    act_status.triggered.connect(lambda: show_window("main", "MainView.qml", 480, 460))
+    act_status.triggered.connect(lambda: show_window("main", "MainView.qml", 480, 500))
     act_settings = menu.addAction(tray_vm.property("settings_label"))
     act_settings.triggered.connect(lambda: show_window("settings", "SettingsView.qml", 600, 660))
     act_about = menu.addAction(tray_vm.property("about_label"))
     act_about.triggered.connect(lambda: show_window("about", "AboutView.qml", 500, 540))
     act_updates = menu.addAction(translator.tr_key("action.updates"))
     act_updates.triggered.connect(lambda: show_window("updates", "UpdateView.qml", 500, 480))
+    act_donate = menu.addAction(translator.tr_key("action.donate"))
+    act_donate.triggered.connect(donate_vm.open_window)
     menu.addSeparator()
     act_quit = menu.addAction(tray_vm.property("quit_label"))
     act_quit.triggered.connect(app.quit)
@@ -307,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         act_settings.setText(tray_vm.property("settings_label"))
         act_about.setText(tray_vm.property("about_label"))
         act_updates.setText(translator.tr_key("action.updates"))
+        act_donate.setText(translator.tr_key("action.donate"))
         act_quit.setText(tray_vm.property("quit_label"))
         tray.setToolTip(tray_vm.property("tooltip"))
 
@@ -384,6 +392,18 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
     updates_vm.page_requested.connect(open_release_page)
     updates_vm.auto_check_changed.connect(set_auto_check_enabled)
 
+    # ---- donate: an optional way to support the project ------------------- #
+    # The view-model opens no browser and no window; the shell surfaces the
+    # panel and, on the user's click, opens KPay's hosted payment page.
+    def open_donation_link(url: str) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        QDesktopServices.openUrl(QUrl(url))
+
+    donate_vm.window_requested.connect(lambda: show_window("donate", "DonateView.qml", 460, 440))
+    donate_vm.donate_requested.connect(open_donation_link)
+
     # ---- session lock (AM-14): nothing to protect behind a lock screen ---- #
     # Watching kept running with the camera indicator lit on a locked machine.
     # The suspender restores exactly what the user had: a session they paused
@@ -397,7 +417,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - requires a
         logger.info("Watching will keep running while the session is locked on this platform.")
 
     def open_main() -> None:
-        show_window("main", "MainView.qml", 480, 460)
+        show_window("main", "MainView.qml", 480, 500)
 
     # ---- first run: onboarding (camera opened only after explicit consent) ---- #
     if not settings.value("onboarding_done", False, type=bool):

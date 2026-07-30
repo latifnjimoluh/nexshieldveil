@@ -139,5 +139,10 @@
   "settings.screen.camera_above": "Caméra au-dessus de l'écran (mm)",
   "settings.screen.source.measured": "mesurée par le système",
   "settings.screen.source.manual": "corrigée à la main",
-  "settings.screen.reset": "Remesurer au prochain démarrage"
+  "settings.screen.reset": "Remesurer au prochain démarrage",
+  "action.donate": "Faire un don",
+  "donate.title": "Soutenir NexShieldVeil",
+  "donate.body": "NexShieldVeil est gratuit et open source (licence MIT). S'il t'est utile, tu peux soutenir son développement par un don — entièrement facultatif.",
+  "donate.action": "Faire un don",
+  "donate.note": "Le bouton ouvre une page de paiement KPay dans ton navigateur. Le paiement se déroule entièrement chez KPay ; NexShieldVeil ne voit ni ne conserve tes informations bancaires."
 }
